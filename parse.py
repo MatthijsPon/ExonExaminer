@@ -4,8 +4,6 @@ Author: Matthijs Pon
 Description: Parse the exons of a gff file into a pandas dataframe
 """
 import pandas as pd
-import time
-
 
 def yield_gff_line(file_object):
     """Iterator, Yields a single non-comment line of a tsv gff file
@@ -184,11 +182,8 @@ def parse_gff_file(file_object):
             # Only exons that belong to selected transcripts are interesting
             if transcripts.get(parent_trans) is not None:
                 exons.append(parse_exon_gff_to_dict(gff))
-    # print("time to read in file: {} seconds".format(time.time() - start_time))
     exon_df = pd.DataFrame(exons)
-    # print("time to convert to df: {} seconds".format(time.time() - start_time))
     exon_df = determine_prime_exons(exon_df)
-    # print("time to determine exons: {} seconds".format(time.time() - start_time))
     exon_df = merge_duplicate_exon_df(exon_df)
 
     return exon_df
@@ -196,7 +191,5 @@ def parse_gff_file(file_object):
 
 # Testing on a small dataset
 if __name__ == '__main__':
-    start_time = time.time()
     with open("./data/GRCh38_latest_genomic.gff") as file:
         exon = parse_gff_file(file)
-    # print("total time: {} seconds".format(time.time() - start_time))
