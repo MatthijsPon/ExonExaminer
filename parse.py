@@ -190,6 +190,10 @@ def parse_gff_file(file_object):
 
 
 # Testing on a small dataset
-if __name__ == '__main__':
-    with open("./data/GRCh38_latest_genomic.gff") as file:
+def testing():
+    with open("./data/GRCh38_latest_genomic_small.gff") as file:
         exon = parse_gff_file(file)
+
+
+if __name__ == '__main__':
+    testing()
