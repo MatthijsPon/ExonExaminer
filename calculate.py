@@ -40,16 +40,23 @@ def prime_dataframes(exon_df):
     return df_dict
 
 
-def bucket_exons(exon_df, bucket_list):
+def bucket_exons(exon_df, bucket_list, index):
     """Bucket exons based on a certain size.
 
     :param exon_df: pandas dataframe object
     :param bucket_list: list of ints, upper border of each bucket
+    :param index: pandas index of group
     :return: exon dataframe with bucket column added
     """
+    name_dict = {
+        (False, False): "non-prime exons",
+        (False, True): "three-prime exons",
+        (True, False): "dive-prime exons",
+        (True, True): "dive- and three-prime exons",
+    }
     # Check which exon is the biggest
     max_size = exon_df["size"].max()
-    print("Biggest exon: {} bp".format(max_size))
+    print("Biggest exon of {}: {} bp".format(name_dict[index], max_size))
     # Check if max exon fits in buckets
     if bucket_list[-1] < max_size:
         raise ValueError("Max bucket size does not fit largest exon.")
@@ -68,7 +75,7 @@ def bucket_exons_and_plot(prime_df_dict, exon_buckets):
 
     plot_dict = {}
     for idx, value in prime_df_dict.items():
-        bucket_df = bucket_exons(value, exon_buckets)
+        bucket_df = bucket_exons(value, exon_buckets, idx)
         total = len(bucket_df.index)
         bucket_df = bucket_df.groupby(["bucket"]).size()
         perc_buckets = pd.Series(bucket_df/total)

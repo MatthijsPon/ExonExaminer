@@ -3,6 +3,8 @@
 Author: Matthijs Pon
 Description: Parse the exons of a gff file into a pandas dataframe
 """
+import time
+
 import pandas as pd
 
 
@@ -132,6 +134,9 @@ def merge_duplicate_exon_df(exons_df):
     :param exons_df: pandas dataframe object
     :return: exons dataframe with unique exons (based on location)
     """
+    # Possible improvement: determine which rows are duplicates, drop them
+    # based on index and add back the merged rows to save memory (maybe time?)
+
     unique_list = []
     for idx, group in exons_df.groupby(["chromosomeID", "start", "stop", "strand"]):
         if len(group) > 1:
@@ -146,10 +151,11 @@ def merge_duplicate_exon_df(exons_df):
     return pd.DataFrame(unique_list)
 
 
-def parse_gff_file(file_object):
+def parse_gff_file(file_object, start_time=None):
     """Iterate through gff lines and parse exons into a pandas dataframe containing relevant information.
 
     :param file_object: iterable, open file object or list of lines
+    :param start_time: time object, only present if clocking is on in main function
     :return: exon_df: dataframe containing deduplicated exons
     """
     genes = {}
@@ -181,10 +187,18 @@ def parse_gff_file(file_object):
             # Only exons that belong to selected transcripts are interesting
             if transcripts.get(parent_trans) is not None:
                 exons.append(parse_exon_gff_to_dict(gff))
-    exon_df = pd.DataFrame(exons)
-    exon_df = determine_prime_exons(exon_df)
-    exon_df = merge_duplicate_exon_df(exon_df)
 
+    if start_time:
+        print("Time to read in file: {:.2f} seconds".format(time.perf_counter() - start_time))
+    exon_df = pd.DataFrame(exons)
+    if start_time:
+        print("Time to convert to dataframe: {:.2f} seconds".format(time.perf_counter() - start_time))
+    exon_df = determine_prime_exons(exon_df)
+    if start_time:
+        print("Time to determine prime exons: {:.2f} seconds".format(time.perf_counter() - start_time))
+    exon_df = merge_duplicate_exon_df(exon_df)
+    if start_time:
+        print("Time to merge duplicates: {:.2f} seconds".format(time.perf_counter() - start_time))
     return exon_df
 
 
