@@ -1,3 +1,7 @@
-/data/
+# Ignoring pycharm stuff
 /.idea/
-/figures/
+/venv/
+
+# Actual gitignore
+/data/
+/images/
