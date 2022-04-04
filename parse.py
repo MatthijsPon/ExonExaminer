@@ -5,6 +5,7 @@ Description: Parse the exons of a gff file into a pandas dataframe
 """
 import pandas as pd
 
+
 def yield_gff_line(file_object):
     """Iterator, Yields a single non-comment line of a tsv gff file
 
@@ -42,7 +43,7 @@ def parse_exon_gff_to_dict(gff_list):
 def determine_prime_exons(exon_df):
     """Determine 5' and 3' exons by grouping exon based on transcripts and selecting the first and last exon.
 
-    :param exon_df: exon dataframe
+    :param exon_df: pandas dataframe object
     :return: exon dataframe with the primes included
     """
     five_prime = []
@@ -132,10 +133,8 @@ def merge_duplicate_exon_df(exons_df):
     :return: exons dataframe with unique exons (based on location)
     """
     unique_list = []
-    count = 0
     for idx, group in exons_df.groupby(["chromosomeID", "start", "stop", "strand"]):
         if len(group) > 1:
-            count += 1
             add = merge_duplicate_exon_rows(group)
             unique_list.append(add)
         else:
