@@ -7,7 +7,7 @@ Description: Create figures and plots
 import matplotlib.pyplot as plt
 
 
-def bucket_histogram(plot_dict, fig_name):
+def bucket_barplot(plot_dict, fig_name):
     """Make a histogram of the bucketed exons
 
     :param plot_dict: a dictionary containing the bucketed dataframes
@@ -16,10 +16,10 @@ def bucket_histogram(plot_dict, fig_name):
     """
 
     name_dict = {
-        (False, False): ((0, 0), "Non-prime exons"),
-        (False, True): ((0, 1), "Three-prime exons"),
-        (True, False): ((1, 0), "Five-prime exons"),
-        (True, True): ((1, 1), "Five- and three-prime exons"),
+        (False, False): ((0, 0), "Internal exons"),
+        (False, True): ((0, 1), "3' exons"),
+        (True, False): ((1, 0), "5' exons"),
+        (True, True): ((1, 1), "both-prime exons"),
     }
     # Make figure containing 2x2 subplots
     fig, axes = plt.subplots(2, 2, sharey="all", figsize=(19.2, 10.8))
@@ -36,3 +36,8 @@ def bucket_histogram(plot_dict, fig_name):
     fig.savefig("{}.png".format(fig_name))
     # Close figure, otherwise object keeps existing and bins are added cumulatively
     plt.close()
+
+
+def exon_len_histogram():
+    """"""
+    pass

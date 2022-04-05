@@ -54,6 +54,7 @@ def determine_prime_exons(exon_df):
     for idx, group in exon_df.groupby("transcriptID"):
         first = group.head(1)
         last = group.tail(1)
+        # Collect the indices of 5' and 3' exons
         if first.iloc[0]["strand"] == "+":
             five_prime.append(first.index.values.astype(int)[0])
             three_prime.append(last.index.values.astype(int)[0])
@@ -64,11 +65,13 @@ def determine_prime_exons(exon_df):
     add_five_prime = [False for i in range(len(exon_df.index))]
     add_three_prime = [False for i in range(len(exon_df.index))]
 
+    # There has to be a more effective way with list comprehension, but I do not know
     for i in five_prime:
         add_five_prime[i] = True
     for i in three_prime:
         add_three_prime[i] = True
 
+    # Since the dataframes are 0-count as are all python objects, the lists can simply be added
     exon_df["five_prime"] = add_five_prime
     exon_df["three_prime"] = add_three_prime
 
@@ -189,16 +192,16 @@ def parse_gff_file(file_object, start_time=None):
                 exons.append(parse_exon_gff_to_dict(gff))
 
     if start_time:
-        print("Time to read in file: {:.2f} seconds".format(time.perf_counter() - start_time))
+        print("Time to read in file: {:.2f} seconds\n".format(time.perf_counter() - start_time))
     exon_df = pd.DataFrame(exons)
     if start_time:
-        print("Time to convert to dataframe: {:.2f} seconds".format(time.perf_counter() - start_time))
+        print("Time to convert to dataframe: {:.2f} seconds\n".format(time.perf_counter() - start_time))
     exon_df = determine_prime_exons(exon_df)
     if start_time:
-        print("Time to determine prime exons: {:.2f} seconds".format(time.perf_counter() - start_time))
+        print("Time to determine prime exons: {:.2f} seconds\n".format(time.perf_counter() - start_time))
     exon_df = merge_duplicate_exon_df(exon_df)
     if start_time:
-        print("Time to merge duplicates: {:.2f} seconds".format(time.perf_counter() - start_time))
+        print("Time to merge duplicates: {:.2f} seconds\n".format(time.perf_counter() - start_time))
     return exon_df
 
 

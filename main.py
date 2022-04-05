@@ -38,13 +38,22 @@ def main(filename, clocking=False):
     # Add primes to dict
     prime_df_dict = prime_dataframes(exon_df)
     if start_time:
-        print("Time to determine primes and add to dict: {:.2f} seconds".format(time.perf_counter() - start_time))
+        print("Time to determine primes and add to dict: {:.2f} seconds\n".format(time.perf_counter() - start_time))
 
     # Bucket exons and create histograms
     exon_buckets = [0, 100, 200, 300, 400, 500, 1000, 2000, 5000, 50000]
-    bucket_exons_and_plot(prime_df_dict, exon_buckets)
+    bucket_dict = bucket_exons_and_plot(prime_df_dict, exon_buckets)
+    name_dict = {
+        (False, False): "internal exons",
+        (False, True): "3' exons",
+        (True, False): "5' exons",
+        (True, True): "double-prime exons",
+    }
+    for idx, bucket_series in bucket_dict.items():
+        print("Bucket information for {}:\n{}\n".format(name_dict[idx], bucket_series))
+        print("Total exons in all buckets: {}\n\n".format(sum(bucket_series)))
     if start_time:
-        print("Time to bucket exons and plot: {:.2f} seconds".format(time.perf_counter() - start_time))
+        print("Time to bucket exons and plot: {:.2f} seconds\n".format(time.perf_counter() - start_time))
 
 
 if __name__ == "__main__":

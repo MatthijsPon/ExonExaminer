@@ -6,7 +6,7 @@ Description: Perform calculations on the parsed exons
 
 import pandas as pd
 
-from plots import bucket_histogram
+from plots import bucket_barplot
 
 
 def exon_trans_gene_amount(exon_df):
@@ -49,10 +49,10 @@ def bucket_exons(exon_df, bucket_list, index):
     :return: exon dataframe with bucket column added
     """
     name_dict = {
-        (False, False): "non-prime exons",
-        (False, True): "three-prime exons",
-        (True, False): "dive-prime exons",
-        (True, True): "dive- and three-prime exons",
+        (False, False): "internal exons",
+        (False, True): "3' exons",
+        (True, False): "5' exons",
+        (True, True): "double-prime exons",
     }
     # Check which exon is the biggest
     max_size = exon_df["size"].max()
@@ -66,21 +66,24 @@ def bucket_exons(exon_df, bucket_list, index):
 
 
 def bucket_exons_and_plot(prime_df_dict, exon_buckets):
-    """Use the bucket_exons() function and create barplots
+    """Use the bucket_exons() function and create bar plots
 
     :param prime_df_dict: pandas df, exon df containing the prime indicators
     :param exon_buckets: list of ints, bucket borders
-    :return: None, a figure is created using the buckets
+    :return: dict of series, (5' bool, 3' bool) coupled to bucketed exon counts
     """
 
     plot_dict = {}
+    return_dict = {}
     for idx, value in prime_df_dict.items():
         bucket_df = bucket_exons(value, exon_buckets, idx)
         total = len(bucket_df.index)
         bucket_df = bucket_df.groupby(["bucket"]).size()
+        return_dict[idx] = bucket_df
         perc_buckets = pd.Series(bucket_df/total)
         plot_dict[idx] = perc_buckets
 
-    bucket_histogram(plot_dict, "./images/bucket_distribution")
+    bucket_barplot(plot_dict, "./images/bucket_distribution")
+    return return_dict
 
 
