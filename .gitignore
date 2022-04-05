@@ -5,3 +5,4 @@
 # Actual gitignore
 /data/
 /images/
+/out.txt
