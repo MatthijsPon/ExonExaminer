@@ -29,12 +29,11 @@ def main(filename, outfile="out.txt", clocking=False):
     # Calculate how many exons, transcripts and genes are present
     exons, transcripts, genes = exon_trans_gene_amount(exon_df)
     # Output information
-    # TODO output stats to file instead of stdout
     with open(outfile, "w+") as f_out:
         f_out.write("No. of genes: \t\t{}\nNo. of transcripts: {}\n"
                     "No. of exons: \t\t{}\n".format(genes, transcripts, exons))
-        f_out.write("Avg. no. of transcripts per gene: {:.2f}\nAvg. no. of exons per transcript: {:.2f}\n"
-                    "".format((transcripts / genes), (exons / transcripts)))
+        f_out.write("Avg. no. of transcripts per gene: {:.2f}\nAvg. no. of exons per gene: {:.2f}\n"
+                    "".format((transcripts / genes), (exons / genes)))
 
     # Add primes to dict
     prime_df_dict = prime_dataframes(exon_df)
@@ -42,9 +41,12 @@ def main(filename, outfile="out.txt", clocking=False):
         print("Time to determine primes and add to dict: {:.2f} seconds\n".format(time.perf_counter() - start_time))
 
     # Create length histograms
-    bins = [i for i in range(0, 35000, 500)]
+    bins = [i for i in range(0, 36000, 500)]
     exon_len_histograms(prime_df_dict, "./images/exon_length_histogram", bins)
     exon_len_histograms(prime_df_dict, "./images/exon_length_histogram_xlog_transformed", bins, ylog=True)
+
+    if start_time:
+        print("Time to create length histograms: {:.2f} seconds\n".format(time.perf_counter() - start_time))
 
     # Bucket exons and create bar plots
     exon_buckets = [0, 100, 200, 300, 400, 500, 1000, 2000, 5000, 50000]
@@ -55,11 +57,12 @@ def main(filename, outfile="out.txt", clocking=False):
         (True, False): "5' exons",
         (True, True): "double-prime exons",
     }
-
+    # Output information
     with open(outfile, "a+") as f_out:
         for idx, bucket_series in bucket_dict.items():
             f_out.write("Bucket information for {}:\n{}\n".format(name_dict[idx], bucket_series))
             f_out.write("Total exons in all buckets: {}\n\n".format(sum(bucket_series)))
+
     if start_time:
         print("Time to bucket exons and plot: {:.2f} seconds\n".format(time.perf_counter() - start_time))
 
