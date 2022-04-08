@@ -29,11 +29,21 @@ def parse_exon_gff_to_dict(gff_list):
     :return: dict, column name: data
     """
     split_gff_8 = gff_list[8].split(";")
+    gene_id = ""
+
+    if split_gff_8[4].startswith("gene="):
+        gene_id = split_gff_8[4].split("=")[1]
+    else:
+        # Sometimes, the order of the gff[8] is different, this is for these edge cases
+        for item in split_gff_8:
+            if item.startswith("gene="):
+                gene_id = item.split("=")[1]
+
     exon_dict = {
         "chromosomeID": gff_list[0],
         "exonID": ["-".join(split_gff_8[0].split("-")[1:])],
         "transcriptID": "-".join(split_gff_8[1].split("-")[1:]),
-        "geneID": split_gff_8[4].split("=")[1],
+        "geneID": gene_id,
         "start": int(gff_list[3]),
         "stop": int(gff_list[4]),
         "strand": gff_list[6],
@@ -190,15 +200,17 @@ def parse_gff_file(file_object, start_time=None):
             # Only exons that belong to selected transcripts are interesting
             if transcripts.get(parent_trans) is not None:
                 exons.append(parse_exon_gff_to_dict(gff))
-
     if start_time:
         print("Time to read in file: {:.2f} seconds\n".format(time.perf_counter() - start_time))
+
     exon_df = pd.DataFrame(exons)
     if start_time:
         print("Time to convert to dataframe: {:.2f} seconds\n".format(time.perf_counter() - start_time))
+
     exon_df = determine_prime_exons(exon_df)
     if start_time:
         print("Time to determine prime exons: {:.2f} seconds\n".format(time.perf_counter() - start_time))
+
     exon_df = merge_duplicate_exon_df(exon_df)
     if start_time:
         print("Time to merge duplicates: {:.2f} seconds\n".format(time.perf_counter() - start_time))
@@ -207,8 +219,8 @@ def parse_gff_file(file_object, start_time=None):
 
 # Testing on a small dataset
 def testing():
-    with open("./data/GRCh38_latest_genomic_small.gff") as file:
-        exon = parse_gff_file(file)
+    with open("./data/GRCh38_latest_genomic.gff") as file:
+        exon = parse_gff_file(file, start_time=time.perf_counter())
 
 
 if __name__ == '__main__':
