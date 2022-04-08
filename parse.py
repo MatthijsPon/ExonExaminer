@@ -122,7 +122,7 @@ def merge_duplicate_exon_rows(group):
 
         merged_dict["chromosomeID"] = row["chromosomeID"]
         merged_dict["exonID"].add(row["exonID"][0])
-        merged_dict["transcriptID"].add(row["transcriptID"][0])
+        merged_dict["transcriptID"].add(row["transcriptID"])
         merged_dict["geneID"] = row["geneID"]
         merged_dict["start"] = row["start"]
         merged_dict["stop"] = row["stop"]
