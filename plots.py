@@ -63,11 +63,13 @@ def exon_len_histograms(exon_prime_df, fig_name, bins, ylog=False):
     # Make each subplot
     for idx, value in exon_prime_df.items():
         # Create the plot and set name and axis titles
-        value["size"].plot.hist(ax=axes[name_dict[idx][0]], bins=bins, title=name_dict[idx][1],
-                                xlabel="size (bp)", ylabel="relative amount of exons in bin")
+        value["size"].plot.hist(ax=axes[name_dict[idx][0]], bins=bins, title=name_dict[idx][1])
+        axes[name_dict[idx][0]].set_xlabel("exon size (50bp buckets)") 
+
         # log transform y axes
         if ylog:
             axes[name_dict[idx][0]].set_yscale('log')
+            axes[name_dict[idx][0]].set_ylabel('log(Frequency)')
 
     fig.savefig("{}.png".format(fig_name))
     # Close figure, otherwise object keeps existing and bins are added cumulatively
