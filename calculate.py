@@ -3,10 +3,10 @@
 Author: Matthijs Pon
 Description: Perform calculations on the parsed exons
 """
+import collections
 
 import pandas as pd
-
-from plots import bucket_barplot
+from plots import *
 
 
 def exon_trans_gene_amount(exon_df):
@@ -85,5 +85,35 @@ def bucket_exons_and_plot(prime_df_dict, exon_buckets):
 
     bucket_barplot(plot_dict, "./images/bucket_distribution")
     return return_dict
+
+
+def largest_exon_genes(exon_df, quantity):
+    """Return the gene names of the genes that contain the N largest exons in descending order.
+
+    :param exon_df: pandas dataframe, exon dataframe from parse function
+    :param quantity: amount of genes to return
+    :return: list, genes ordered on largest exon size
+    """
+    subset = exon_df.nlargest(quantity, "size", keep="all")
+    gene_list = subset["geneID"].tolist()
+    return gene_list
+
+
+def query_largest_exon_genes(gene_list, expression_file, filename):
+    """"""
+    # Determine which items are duplicates
+    duplicates = [(item, count) for item, count in collections.Counter(gene_list).items() if count > 1]
+    # Read in gene expression data
+    expression_df = pd.read_csv(expression_file, skiprows=2, header=0, sep="\t")
+    # Take a subset containing only the genes from the [gene_list]
+    gene_expr = expression_df.loc[expression_df["Description"].isin(gene_list)]
+    # This determines which genes are not included in the expression data
+
+    excluded = list(set(gene_expr["Description"]).symmetric_difference(set(gene_list)))
+    expression_heatmap(gene_expr, filename)
+    return duplicates, excluded
+
+
+
 
 
