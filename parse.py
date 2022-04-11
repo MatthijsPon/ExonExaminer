@@ -22,6 +22,14 @@ def yield_gff_line(file_object):
         yield line.split("\t")
 
 
+def present_gff_elements(file_object):
+    """"""
+    elements = set()
+    for line in yield_gff_line(file_object):
+        elements.add(line[2])
+    return elements
+
+
 def parse_exon_gff_to_dict(gff_list):
     """Parse a single exon gff line to a dict.
 
