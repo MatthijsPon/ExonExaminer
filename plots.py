@@ -5,6 +5,7 @@ Description: Create figures and plots
 """
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def bucket_barplot(plot_dict, fig_name):
@@ -64,7 +65,7 @@ def exon_len_histograms(exon_prime_df, fig_name, bins, ylog=False):
     for idx, value in exon_prime_df.items():
         # Create the plot and set name and axis titles
         value["size"].plot.hist(ax=axes[name_dict[idx][0]], bins=bins, title=name_dict[idx][1])
-        axes[name_dict[idx][0]].set_xlabel("exon size (50bp buckets)") 
+        axes[name_dict[idx][0]].set_xlabel("exon size (500bp buckets)")
 
         # log transform y axes
         if ylog:
@@ -73,4 +74,25 @@ def exon_len_histograms(exon_prime_df, fig_name, bins, ylog=False):
 
     fig.savefig("{}.png".format(fig_name))
     # Close figure, otherwise object keeps existing and bins are added cumulatively
+    plt.close()
+
+
+def expression_heatmap(expression_df, filename):
+    """"""
+    # Drop the name column, which is ENSEMBL gene codes
+    expression_df = expression_df.drop(columns="Name")
+    # Set the actual gene names as index for the figure
+    expression_df = expression_df.set_index("Description")
+    # Set figure size before creating figure, otherwise it won't work
+    # plt.figure(figsize=(19.2, 10.8))
+    plt.rcParams.update({"font.size": 8, "figure.figsize": (30, 20)})
+    sns.heatmap(expression_df)
+    plt.savefig("{}.png".format(filename))
+    plt.close()
+
+    # Normalize heatmap
+    df_norm_row = expression_df.apply(lambda x: x / x.max(), axis=1)
+    plt.rcParams.update({"font.size": 8, "figure.figsize": (30, 20)})
+    sns.heatmap(df_norm_row)
+    plt.savefig("{}_normalized.png".format(filename))
     plt.close()
