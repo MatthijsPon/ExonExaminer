@@ -92,6 +92,13 @@ def expression_heatmap(expression_df, filename):
 
     # Normalize heatmap
     df_norm_row = expression_df.apply(lambda x: x / x.max(), axis=1)
+
+    # Check what values are causing NA during normalization:
+    # with pd.option_context("display.max_rows", None, "display.max_columns", None):
+    #     print(expression_df[df_norm_row.isna().any(axis=1)])
+
+    # Values with 0 in the whole row are converted to NaN (as 0 / 0 occurs), so replace those with 0
+    df_norm_row.fillna(0, inplace=True)
     plt.rcParams.update({"font.size": 8, "figure.figsize": (30, 20)})
     sns.heatmap(df_norm_row)
     plt.savefig("{}_normalized.png".format(filename))
