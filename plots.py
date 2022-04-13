@@ -103,3 +103,12 @@ def expression_heatmap(expression_df, filename):
     sns.heatmap(df_norm_row)
     plt.savefig("{}_normalized.png".format(filename))
     plt.close()
+
+
+def barplot_df(dataframe, filename):
+    """"""
+    plt.rcParams.update({"font.size": 12, "figure.figsize": (30, 20)})
+    dataframe.set_index("exonID", inplace=True)
+    dataframe["size"].plot.bar()
+    plt.savefig("{}.png".format(filename))
+    plt.close()
