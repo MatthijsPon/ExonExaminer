@@ -17,16 +17,6 @@ def main(filename, outdir="./out/", clocking=False):
     if clocking:
         start_time = time.perf_counter()
 
-    # Present all the gff_elements in a file if it doesn't exist yet
-    if not os.path.exists("./out/gff_elements.txt"):
-        with open(filename) as file:
-            elements = present_gff_elements(file)
-        with open("{}gff_elements.txt".format(outdir), "w+") as out_f:
-            for item in elements:
-                out_f.write("{}\n".format(item))
-        if start_time:
-            print("Time present_gff_elements: {:.2f} seconds\n".format(time.perf_counter() - start_time))
-
     # Either parse the file or load existing dataframe to save time
     if not os.path.exists("./data/exons_df.pickle"):
         # Parse file into df
@@ -78,14 +68,24 @@ def main(filename, outdir="./out/", clocking=False):
     if start_time:
         print("Time to bucket exons and plot: {:.2f} seconds\n".format(time.perf_counter() - start_time))
 
-    # Create heatmaps of the genes containing the top N exons
-    genes_quantity = 100
-    exon_list = largest_exon_genes(exon_df, genes_quantity)
-    duplicates, excluded = query_largest_exon_genes(exon_list, "./data/GTEx_gene_median_tpm.gct.gz",
-                                                    "./images/heatmap_top_{}_gene_expression".format(genes_quantity))
+    # Variable determining how many exons are taken along
+    exon_quantity = 500
+    # Retrieve associated genes and plot sizes of the largest exons
+    gene_list = largest_exon_genes(exon_df, exon_quantity, "./images/top_{}_barplot_size".format(exon_quantity))
+    # Create heatmaps of the genes containing the top N largest exons
+
+    duplicates, excluded = heatmap_expression_genes(gene_list, "./data/GTEx_gene_median_tpm.gct.gz",
+                                                    "./images/heatmaps/top_{}_heatmap_gene_expression".format(exon_quantity))
+    # Do the same for a random subset of the same size
+    seeds = [i for i in range(1, 11)]
+    for seed in seeds:
+        random_gene_list = exon_df.sample(n=exon_quantity, random_state=seed)
+        heatmap_expression_genes(random_gene_list["geneID"].tolist(), "./data/GTEx_gene_median_tpm.gct.gz",
+                                 "./images/heatmaps/random_{}_{}_heatmap_gene_expression".format(seed, exon_quantity))
+
     # Output information
     with open("{}expression_information.txt".format(outdir), "a+") as f_out:
-        f_out.write("Out of the top {} genes, the following genes are present multiple times:\n".format(genes_quantity))
+        f_out.write("Out of the top {} genes, the following genes are present multiple times:\n".format(exon_quantity))
         duplicates.sort(reverse=True, key=lambda x: x[1])
         for item, count in duplicates:
             f_out.write("{}\t{}\n".format(item, count))
