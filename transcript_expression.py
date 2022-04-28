@@ -276,11 +276,15 @@ def ratio_expression_exon(gene_df, expression_df, target_exon=None):
     # # Couple expression to target transcripts
     total_exp_target = subset_target.sum(axis=1)
     # total_exp_target = subset_target.loc[:, subset_target.columns != "trans_id"].sum()
-    total_all = sum(list(total_exp_all))
-    total_target = sum(list(total_exp_target))
+    if len(total_exp_all) == 0:  # If the gene is not measured, discard the ratio
+        return None
+    total_all = stats.fmean(list(total_exp_all))
+    if len(total_exp_target) == 0:  # Target transcript was not measured, skip
+        return None
+    total_target = stats.fmean(list(total_exp_target))
 
-    if total_all == 0.0:
-        return 0
+    if total_all == 0.0:  # If there is no expression measured at all, discard the ratio
+        return None
     ratio = total_target / total_all
     return ratio
 
@@ -344,7 +348,7 @@ def main():
     }
     with open(gff) as file:
         for gene_df in yield_single_gene(file):
-            # For each gene determine the ratio
+            # For each gene determine the expression ratio
             ratio = ratio_expression_exon(gene_df, expression_df)
             if ratio:
                 data["no_trans"].append((gene_df.type.values == "transcript").sum())  # Number of transcripts in gene
