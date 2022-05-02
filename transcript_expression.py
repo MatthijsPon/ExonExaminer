@@ -324,15 +324,21 @@ def create_scatterplot_no_transcripts(data, out_dir, complexity):
         plt.savefig("{}scatterplot_complexity{}_{}trans.png".format(out_dir, complexity, key))
         plt.close()
 
-    """ Putting all plots in a single image
-    fig, axes = plt.subplots(closest_root, closest_root)
-    for idx, key in enumerate(trans_numbers):
-        row = idx // closest_root  # row index
-        col = idx % closest_root  # col index
-        print(idx, col, key)
-        data.loc[data["no_trans"] == key].plot(x="max_exon", y="ratio", style="o", ax=axes[(row, col)],
-                                                title="{} transcripts in gene".format(key))
+
+def create_zoom_scatterplot(data, out_dir, complexity):
+    """Create a zoom in of the full scatterplot
+
+    :param data: pandas dataframe, containing data to plot
+    :param out_dir: str, output directory
+    :param complexity: int, complexity used for data creation
+    :return: None, figures are created and written to disk
     """
+    plt.rcParams.update({"font.size": 20, "figure.figsize": (30, 20)})
+    data = data.loc[(data["max_exon"] >= 500) & (data["max_exon"] <= 10000)]  # Select certain sizes
+    data = data.loc[data["ratio"] <= 4]
+    data.plot(x="max_exon", y="ratio", style="o")
+    plt.savefig("{}full_zoom_scatterplot_complexity{}.png".format(out_dir, complexity))
+    plt.close()
 
 
 def main():
@@ -359,6 +365,7 @@ def main():
                 continue
     data = pd.DataFrame(data)
     create_full_scatterplot(data, out_dir, complexity)
+    create_zoom_scatterplot(data, out_dir, complexity)
     create_scatterplot_no_transcripts(data, out_dir, complexity)
     print("Done, time taken: {:.2f} seconds\n".format(time.perf_counter() - start_time))
 
