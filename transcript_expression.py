@@ -55,7 +55,7 @@ def determine_gff(gff_8, identifier, further_split=None):
 
 
 def yield_single_gene(file_object):
-    """Yield a single gene from a gff3 file, including related transcripts and exons.
+    """Yield a single gene from a gff3 file, including related protein coding transcripts and exons.
 
     :param file_object: open file object, gff3 file
     :return: pandas dataframe, gene information containing type, id, parent, size and alias columns
@@ -91,7 +91,8 @@ def yield_single_gene(file_object):
             gene_dict["id"].append(gene_id)
             gene_dict["parent"].append(None)
             gene_dict["size"].append(None)
-        elif line[2] in ["transcript", "mRNA", "primary_transcript"]:
+        elif line[2] in ["transcript", "mRNA", "primary_transcript"] and \
+                determine_gff(line[8], "biotype=") == "protein_coding":
             if determine_gff(line[8], "Parent=gene:") == gene_id:
                 trans_id = determine_gff(line[8], "ID=transcript:")
                 transcript.append(trans_id)
