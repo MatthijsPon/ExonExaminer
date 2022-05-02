@@ -66,7 +66,7 @@ def ratio_transcripts_exon(gene_df, target_exon=None):
     target_trans = gene_df.loc[gene_df["id"] == target_exon, "parent"].nunique()
     target_ratio = float(target_trans) / all_trans
     # Get all non-target internal exons
-    internal_exons = get_internal_exons(gene_df, remove=target_exon)
+    internal_exons = get_internal_exons(gene_df)  # , remove=target_exon)
     if not internal_exons:
         return None
     internal_ratios = []
@@ -108,7 +108,7 @@ def main():
     GFF_FILE = "./data/Homo_sapiens.GRCh38.106.chr.gff3"
     OUT_DIR = "./data/out/transcript_ratio"
     TEMP_DIR = "./data/temp"
-    SIZES_OF_INTEREST = [0, 500, 1000, 2500, (1000, 10000)]
+    SIZES_OF_INTEREST = [0, 100, 200, 250, 400, 500, 1000, 2500, (1000, 10000)]
 
     if not os.path.exists("{}/longest_exon_transcript_ratio.pickle".format(TEMP_DIR)):
         exon_sizes = []
@@ -172,11 +172,11 @@ def main():
                 out_file.write("Welch t-statistic: {}, p-value: {}\n".format(welch_t, p_val))
 
             out_file.write("\n\n")
-            # Create scatter plot containing
             plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
             subset.plot(x="exon_size", y="ratio", style="o")
             plt.savefig("{}/internal_exon_ratio_{}.png".format(OUT_DIR, size))
             plt.close()
+    print("Finished")
 
 
 if __name__ == '__main__':
