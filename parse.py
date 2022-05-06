@@ -23,7 +23,11 @@ def yield_gff_line(file_object):
 
 
 def present_gff_elements(file_object):
-    """"""
+    """Parse all unique gff elements (gff[2]).
+    
+    :param file_object: open file object, gff file
+    :return: set containing strings, gff elements
+    """
     elements = set()
     for line in yield_gff_line(file_object):
         elements.add(line[2])
