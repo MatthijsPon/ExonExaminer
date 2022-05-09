@@ -1,0 +1,11 @@
+name: exonexaminer
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python=3.10.4
+  - pandas
+  - numpy=1.22.3
+  - matplotlib
+  - scipy
+  - snakemake-minimal
