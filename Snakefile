@@ -15,5 +15,6 @@ rule exon_incorporation_script:
     params:
         out_dir="data/out/{gff}/",
         sizes="0 500 1000 2500",
+    threads: 1
     shell:
         "python3 exon_incorporation.py {input.gff3} {params.out_dir} {params.sizes}"
