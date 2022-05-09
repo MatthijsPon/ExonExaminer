@@ -3,6 +3,10 @@
 /venv/
 
 # Actual gitignore
-/data/
-/images/
-/out/
+data/
+images/
+out/
+data
+logs/
+__pycache__/
+
