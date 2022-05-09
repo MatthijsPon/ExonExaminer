@@ -11,6 +11,9 @@ rule exon_incorporation_script:
     input:
         gff3="data/ENSEMBL/{gff}.gff3",
     output:
-        "{outdir}/{gff}/statistical_information.txt"
+        "{outdir}/{gff}/statistical_information.txt",
+    params:
+        out_dir="data/out/{gff}/",
+        sizes="0 500 1000 2500",
     shell:
-        "echo {input.gff3}"
+        "python3 exon_incorporation.py {input.gff3} {params.out_dir} {params.sizes}"
