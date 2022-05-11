@@ -22,10 +22,26 @@ def exon_trans_gene_amount(exon_df):
     # Adapted from: https://towardsdatascience.com/dealing-with-list-values-in-pandas-dataframes-a177e534f173
     transcripts = pd.Series([x for trans_list in exon_df["transcriptID"] for x in trans_list]).nunique()
 
+    # Do the same for all unique exon values to get the unmerged amount
+    unmerged_exons = pd.Series([x for trans_list in exon_df["exonID"] for x in trans_list]).nunique()
     # Gather all unique gene names
     genes = exon_df["geneID"].nunique()
 
-    return exons, transcripts, genes
+    return exons, transcripts, genes, unmerged_exons
+
+
+def output_type_counts(exon_df, filename):
+
+    exons, transcripts, genes, unmerged_exons = exon_trans_gene_amount(exon_df)
+
+    # Output information
+    with open(filename, "w+") as f_out:
+        f_out.write("No. of genes: \t\t{}\nNo. of transcripts: {}\n"
+                    "No. of unique exons: \t\t{}\n".format(genes, transcripts, exons))
+        f_out.write("Avg. no. of transcripts per gene: {:.2f}\n"
+                    "Avg. no. of exons per transcript: {:.2f}\n"
+                    "Avg. no. of exons per gene: {:.2f}\n"
+                    "".format((transcripts / genes), (unmerged_exons / transcripts), (exons / genes)))
 
 
 def prime_dataframes(exon_df):
@@ -113,6 +129,17 @@ def heatmap_expression_genes(gene_list, expression_file, filename):
     excluded = list(set(gene_expr["Description"]).symmetric_difference(set(gene_list)))
     expression_heatmap(gene_expr, filename)
     return duplicates, excluded
+
+
+def genes_between_size(exon_df, min_size, max_size=None):
+    """"""
+    if max_size:
+        subset = exon_df.loc[(exon_df["size"] >= min_size) & (exon_df["size"] <= max_size)]
+    else:
+        subset = exon_df.loc[exon_df["size"] >= min_size]
+    return subset["geneID"].tolist()
+
+
 
 
 

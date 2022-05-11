@@ -3,8 +3,8 @@
 Author: Matthijs Pon
 Description: Parse the exons of a gff file into a pandas dataframe
 """
+import os
 import time
-
 import pandas as pd
 
 
@@ -119,7 +119,7 @@ def merge_duplicate_exon_rows(group):
         "five_prime": False,
         "three_prime": False
     }
-
+    alert_given = False
     for index, row in group.iterrows():
         # Sanity checks for actual duplication events:
         if merged_dict["start"] != 0 and row["start"] != merged_dict["start"]:
@@ -140,6 +140,23 @@ def merge_duplicate_exon_rows(group):
         merged_dict["stop"] = row["stop"]
         merged_dict["size"] = row["size"]
         merged_dict["strand"] = row["strand"]
+
+        # Check if single exon gene or if an exon both the 3' and 5' function but in different transcripts
+        if not alert_given:
+            if row["five_prime"] and row["three_prime"]:
+                if merged_dict["three_prime"] and not merged_dict["five_prime"]:
+                    print("single exon gene pushed to existing three prime:\nExonID: {}".format(row["exonID"]))
+                elif merged_dict["five_prime"] and not merged_dict["three_prime"]:
+                    print("single exon gene pushed to existing five prime:\nExonID: {}".format(row["exonID"]))
+                elif merged_dict["three_prime"] and merged_dict["five_prime"]:
+                    print("single exon gene pushed to existing single exon gene:\nExonID: {}".format(row["exonID"]))
+
+            if row["five_prime"] and not row["three_prime"]:
+                if merged_dict["three_prime"]:
+                    print("three prime added while five prime existed.\nExonID: {}".format(row["exonID"]))
+            if row["three_prime"] and not row["five_prime"]:
+                if merged_dict["five_prime"]:
+                    print("five prime added while three prime existed.\nExonID: {}".format(row["exonID"]))
 
         # If either exon acts as a five or three prime, set value to true
         if row["five_prime"]:
@@ -188,7 +205,8 @@ def parse_gff_file(file_object, start_time=None):
     exons = []
     for gff in yield_gff_line(file_object):
 
-        if gff[2] in ["gene", "pseudogene"]:
+        # i gff[2] in ["gene", "pseudogene"]:
+        if gff[2] == "gene":
             # Add genes to the gene dict
             gene_id = gff[8].split(";")[0][3:]
             # If more information is needed, add it here!
@@ -226,6 +244,27 @@ def parse_gff_file(file_object, start_time=None):
     exon_df = merge_duplicate_exon_df(exon_df)
     if start_time:
         print("Time to merge duplicates: {:.2f} seconds\n".format(time.perf_counter() - start_time))
+    return exon_df
+
+
+def parse_or_load_dataframe(gff_filename, df_save_file, start_time=None):
+    """Parse gff file or load existing dataframe.
+
+    :param gff_filename: string, path to gff file.
+    :param df_save_file: string, path to dataframe save file.
+    :param start_time: time object, used when clocking (default None).
+    :return: pandas dataframe object, exon_df
+    """
+    if not os.path.exists(df_save_file):
+        # Parse file into df
+        with open(gff_filename) as file:
+            exon_df = parse_gff_file(file, start_time)
+        # Save df
+        exon_df.to_pickle(df_save_file)
+    else:
+        # Load parsed dataframe
+        exon_df = pd.read_pickle(df_save_file)
+
     return exon_df
 
 

@@ -6,6 +6,7 @@ Description: Create figures and plots
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib.colors import LogNorm
 
 
 def bucket_barplot(plot_dict, fig_name):
@@ -20,7 +21,7 @@ def bucket_barplot(plot_dict, fig_name):
         (False, False): ((0, 0), "Internal exons"),
         (False, True): ((0, 1), "3' exons"),
         (True, False): ((1, 0), "5' exons"),
-        (True, True): ((1, 1), "both-prime exons"),
+        (True, True): ((1, 1), "Single exon genes"),
     }
     # Make figure containing 2x2 subplots
     fig, axes = plt.subplots(2, 2, sharey="all", figsize=(19.2, 10.8))
@@ -39,13 +40,13 @@ def bucket_barplot(plot_dict, fig_name):
     plt.close()
 
 
-def exon_len_histograms(exon_prime_df, fig_name, bins, ylog=False):
+def exon_len_histograms(exon_prime_df, fig_name, bins, max_height=0):
     """Make four histograms of the exon lengths
 
     :param exon_prime_df: exon dataframes, grouped on primes
     :param fig_name: str, name of output file (excl. ".png"), incl leading folder location
     :param bins: list of ints, bin borders
-    :param ylog: bool, log transforms y-axis if True
+    :param max_height: int, determine max height of Y-axis
     :return: None, function creates .png file
     """
 
@@ -53,24 +54,18 @@ def exon_len_histograms(exon_prime_df, fig_name, bins, ylog=False):
         (False, False): ((0, 0), "Internal exons"),
         (False, True): ((0, 1), "3' exons"),
         (True, False): ((1, 0), "5' exons"),
-        (True, True): ((1, 1), "both-prime exons"),
+        (True, True): ((1, 1), "Single exon genes"),
     }
     # Make figure containing 2x2 subplots
-    if ylog:
-        fig, axes = plt.subplots(2, 2, sharex="all", sharey="all", figsize=(19.2, 10.8))
-    else:
-        fig, axes = plt.subplots(2, 2, sharex="all", figsize=(19.2, 10.8))
+    fig, axes = plt.subplots(2, 2, sharex="all", sharey="all", figsize=(19.2, 10.8))
 
     # Make each subplot
     for idx, value in exon_prime_df.items():
         # Create the plot and set name and axis titles
         value["size"].plot.hist(ax=axes[name_dict[idx][0]], bins=bins, title=name_dict[idx][1])
-        axes[name_dict[idx][0]].set_xlabel("exon size (500bp buckets)")
-
-        # log transform y axes
-        if ylog:
-            axes[name_dict[idx][0]].set_yscale('log')
-            axes[name_dict[idx][0]].set_ylabel('log(Frequency)')
+        axes[name_dict[idx][0]].set_xlabel("exon size (50 bp buckets)")
+        if max_height > 0:
+            axes[name_dict[idx][0]].set_ylim([0, max_height])
 
     fig.savefig("{}.png".format(fig_name))
     # Close figure, otherwise object keeps existing and bins are added cumulatively
@@ -78,16 +73,26 @@ def exon_len_histograms(exon_prime_df, fig_name, bins, ylog=False):
 
 
 def expression_heatmap(expression_df, filename):
-    """"""
+    """Create an expression heatmap.
+
+    :param expression_df: pandas dataframe object, created using the heatmap_expression_genes().
+    :param filename: string, filename to save image to, including location and without trailing filetype.
+    :return: None. Function creates figure.
+    """
     # Drop the name column, which is ENSEMBL gene codes
     expression_df = expression_df.drop(columns="Name")
     # Set the actual gene names as index for the figure
     expression_df = expression_df.set_index("Description")
     # Set figure size before creating figure, otherwise it won't work
-    # plt.figure(figsize=(19.2, 10.8))
     plt.rcParams.update({"font.size": 8, "figure.figsize": (30, 20)})
     sns.heatmap(expression_df)
     plt.savefig("{}.png".format(filename))
+    plt.close()
+
+    # Redo, but log_normalized
+    plt.rcParams.update({"font.size": 8, "figure.figsize": (30, 20)})
+    sns.heatmap(expression_df, norm=LogNorm())
+    plt.savefig("{}_lognorm.png".format(filename))
     plt.close()
 
     # Normalize heatmap
@@ -106,7 +111,12 @@ def expression_heatmap(expression_df, filename):
 
 
 def barplot_df(dataframe, filename):
-    """"""
+    """Create a bar plot from a dataframe.
+
+    :param dataframe:
+    :param filename:
+    :return:
+    """
     plt.rcParams.update({"font.size": 12, "figure.figsize": (30, 20)})
     dataframe.set_index("exonID", inplace=True)
     dataframe["size"].plot.bar()
