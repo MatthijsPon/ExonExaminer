@@ -4,8 +4,9 @@ Author: Matthijs Pon
 Description: This script parses an ENSEMBL gff3 file and determines the average
              inclusion of exons compared to their length.
 """
+import os
 
-from transcript_expression import determine_target_exon, yield_single_gene
+from helpers import get_internal_exons, yield_single_gene, determine_target_exon
 from matplotlib import pyplot as plt
 
 import argparse as arg
@@ -13,7 +14,6 @@ import pandas as pd
 import scipy.stats as stats
 
 import statistics
-import os
 
 
 def parse_arguments():
@@ -30,36 +30,6 @@ def parse_arguments():
                         help="size cutoff(s) for selecting exon sizes")
     args = parser.parse_args()
     return args.gff3_file, args.out_dir, args.sizes_of_interest
-
-
-def get_internal_exons(gene_df, remove=None):
-    """Create a list of all internal exons in the gene dataframe
-
-    :param gene_df: pandas dataframe, gene dataframe
-    :param remove: str, exon ID (default: None)
-    :return: set of str, exon IDs of internal exons (otherwise None)
-
-    Select exons per transcript and determine which are internal. An internal exon has a non-prime position in at
-    least one transcript. Returns all unique exon IDs.
-    """
-    non_prime = set()
-    only_exons = gene_df[gene_df["type"] == "exon"]
-
-    for idx, group in only_exons.groupby("parent"):
-        exons_transcript = list(group["id"])
-        exons_transcript.pop(0)  # Remove the first exon
-        if len(exons_transcript) >= 1:  # Cannot pop twice if there is only one exon
-            exons_transcript.pop(-1)  # Remove the last exon
-        for exon in exons_transcript:
-            non_prime.add(exon)
-    # Only return a value when there are internal exons
-    if len(non_prime) >= 1:
-        if remove:
-            non_prime.remove(remove)
-            if len(non_prime) == 0:
-                return None
-        return non_prime
-    return None
 
 
 def exon_transcript_presence(gene_df, target_exon):
@@ -168,21 +138,36 @@ def main():
     """Main function."""
     gff_file, out_dir, sizes_of_interest = parse_arguments()
 
+    ids = []
     exon_sizes = []
     ratios = []
-    with open(gff_file) as file:
-        for gene in yield_single_gene(file):
-            internal_exons = get_internal_exons(gene)
-            if internal_exons is None:
-                continue  # If there are no internal exons, skip the ratios
-            for exon in internal_exons:
-                ratio = ratio_transcripts_exon(gene, target_exon=exon)
-                if ratio:
-                    ratios.append(ratio)
-                    size = gene.loc[gene["id"] == exon, "size"].iloc[0]
-                    exon_sizes.append(int(size))
-    # Create DF from exon size and ratio
-    results = pd.DataFrame({"exon_size": exon_sizes, "ratio": ratios})
+
+    if not os.path.exists("./data/temp/exon_incorporation.pickle"):
+        with open(gff_file) as file:
+            for gene in yield_single_gene(file):
+                internal_exons = get_internal_exons(gene)
+                if internal_exons is None:
+                    continue  # If there are no internal exons, skip the ratios
+                for exon in internal_exons:
+                    ratio = ratio_transcripts_exon(gene, target_exon=exon)
+                    if ratio:
+                        ids.append(exon)
+                        ratios.append(ratio)
+                        size = gene.loc[gene["id"] == exon, "size"].iloc[0]
+                        exon_sizes.append(int(size))
+        # Create DF from exon size and ratio
+        results = pd.DataFrame({"id": ids, "exon_size": exon_sizes, "ratio": ratios})
+        results.to_pickle("./data/temp/exon_incorporation.pickle")
+    else:
+        results = pd.read_pickle("./data/temp/exon_incorporation.pickle") 
+
+    ratio_higher = results.loc[results["ratio"] >= 0, "id"]
+    ratio_lower = results.loc[results["ratio"] < 0, "id"]
+
+    with open("{}/genes_ratio_biggerequal_0.csv".format(out_dir), "w+") as outfile:
+        outfile.write(",".join(ratio_higher))
+    with open("{}/genes_ratio_smaller_0.csv".format(out_dir), "w+") as outfile:
+        outfile.write(",".join(ratio_higher))
 
     investigate_normality_plots(results, "ratio", out_dir, "ratio")
 
