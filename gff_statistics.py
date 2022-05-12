@@ -5,124 +5,12 @@ Description:
 """
 
 import os
-import time
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-
-def yield_gff_line(file_object):
-    """Iterator, Yields a single non-comment line of a tsv gff file
-
-    :param file_object: iterable, open file object or list of lines
-    :return: yields a list, a gff line split on \t
-    """
-    for line in file_object:
-        if line.startswith("#"):
-            # Skip the comment line, which is not of interest
-            continue
-        line = line.strip()
-        yield line.split("\t")
-
-
-def determine_gff(gff_8, identifier, further_split=None):
-    """Select a specific object from the information column (column 8 in 0-count)
-
-    :param gff_8: list of str, information column, split
-    :param identifier: str, identifier of column of interest (e.g. ID=). Everything
-                       identifier will be removed from return string
-    :param further_split: str, seperator on which the column should be split on
-                          after removal of the identifier (default: None)
-    :return: str, information following the identifier, otherwise None
-    """
-    for item in gff_8.split(";"):
-        if item.startswith(identifier):
-            if further_split:
-                return item[len(identifier):].split(further_split)
-            return item[len(identifier):]
-    return None
-
-
-def yield_single_gene(file_object):
-    """Yield a single gene from a gff3 file, including related protein coding transcripts and exons.
-
-    :param file_object: open file object, gff3 file
-    :return: pandas dataframe, gene information containing type, id, parent, size and alias columns
-    """
-    gene_dict = {
-        "type": [],
-        "id": [],
-        "chromosome": [],
-        "start": [],
-        "stop": [],
-        "strand": [],
-        "parent": [],
-        "size": [],
-    }
-
-    # A dict needs all three to be complete
-    gene_id = ""
-    transcript = []
-    exon = []
-
-    for line in yield_gff_line(file_object):
-        if line[2] == "gene":
-            if gene_id and transcript and exon:
-                yield pd.DataFrame.from_dict(gene_dict)
-            # Reset stats
-            gene_dict = {
-                "type": [],
-                "id": [],
-                "chromosome": [],
-                "start": [],
-                "stop": [],
-                "strand": [],
-                "parent": [],
-                "size": [],
-            }
-            gene_id = determine_gff(line[8], "ID=gene:")
-            transcript = []
-            exon = []
-            # Add data to dict
-            gene_dict["type"].append("gene")
-            gene_dict["id"].append(gene_id)
-            gene_dict["chromosome"].append(line[0])
-            gene_dict["start"].append(line[3])
-            gene_dict["stop"].append(line[4])
-            gene_dict["strand"].append(line[6])
-            gene_dict["parent"].append(None)
-            gene_dict["size"].append(None)
-        elif line[2] == "mRNA":
-            # only add if there is a parent gene and the mRNA is protein_coding
-            if determine_gff(line[8], "Parent=gene:") == gene_id and \
-                    determine_gff(line[8], "biotype=") == "protein_coding":
-                trans_id = determine_gff(line[8], "ID=transcript:")
-                transcript.append(trans_id)
-                # Add data to dict
-                gene_dict["type"].append("transcript")
-                gene_dict["id"].append(trans_id)
-                gene_dict["chromosome"].append(line[0])
-                gene_dict["start"].append(line[3])
-                gene_dict["stop"].append(line[4])
-                gene_dict["strand"].append(line[6])
-                gene_dict["parent"].append(gene_id)
-                gene_dict["size"].append(None)
-        elif line[2] == "exon":
-            if determine_gff(line[8], "Parent=transcript:") in transcript:
-                exon_id = determine_gff(line[8], "Name=")
-                exon.append(exon_id)
-                gene_dict["type"].append("exon")
-                gene_dict["id"].append(exon_id)
-                gene_dict["chromosome"].append(line[0])
-                gene_dict["start"].append(line[3])
-                gene_dict["stop"].append(line[4])
-                gene_dict["strand"].append(line[6])
-                gene_dict["parent"].append(determine_gff(line[8], "Parent=transcript:"))
-                gene_dict["size"].append((int(line[4]) - int(line[3])))
-
-    if gene_id and transcript and exon:
-        yield pd.DataFrame.from_dict(gene_dict)
+from helpers import yield_single_gene
 
 
 def determine_primes(gene_df):
@@ -196,7 +84,7 @@ def exon_len_histograms(exon_df, out_folder, fig_name, bins, max_height=0):
         plt.ylim([0, max_height])
 
     plt.savefig("{}/{}.png".format(out_folder, fig_name))
-    # Close figure, otherwise object keeps existing and bins are added cumulatively
+    # Close figure, otherwise object keeps existing
     plt.close()
 
 
@@ -221,7 +109,6 @@ def main():
     bins = [i for i in range(1000, 20000, 10)]
     exon_len_histograms(gff.loc[gff["type"] == "exon"], OUTDIR, "histogram_exonlen_1000-20000bp", bins)
     # Exon length distribution per type
-    bins = [i for i in range(0, 10000, 10)]
     name_dict = {
         (False, False): "Internal exons",
         (False, True): "3' exons",
@@ -229,6 +116,9 @@ def main():
         (True, True): "Single exon genes"
     }
     for idx, group in gff.loc[gff["type"] == "exon"].groupby(["five_prime", "three_prime"]):
+        bins = [i for i in range(0, 1000)]
+        exon_len_histograms(group, OUTDIR, "histogram_exonlen_0-1000bp_{}".format(name_dict[idx]), bins)
+        bins = [i for i in range(0, 10000, 10)]
         exon_len_histograms(group, OUTDIR, "histogram_exonlen_0-10000bp_{}".format(name_dict[idx]), bins)
 
     # Statistics
