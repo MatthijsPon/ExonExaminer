@@ -113,7 +113,7 @@ def yield_single_gene(file_object):
                 gene_dict["stop"].append(line[4])
                 gene_dict["strand"].append(line[6])
                 gene_dict["parent"].append(determine_gff(line[8], "Parent=transcript:"))
-                gene_dict["size"].append((int(line[4]) - int(line[3])))
+                gene_dict["size"].append((int(line[4]) - int(line[3]) + 1))  # The size is incl. the last nucleotide
 
     if gene_id and transcript and exon:
         yield pd.DataFrame.from_dict(gene_dict)
