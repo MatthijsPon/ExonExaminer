@@ -107,17 +107,27 @@ def main():
     # Create histogram of transcripts/gene and exons/transcript
     option = {"transcript": "transcripts per gene",
               "exon": "exons per transcripts"}
+    output = {}
     for item in ["transcript", "exon"]:
         temp_data = gff.loc[gff["type"] == item]
         # Calculate
         temp_data = pd.Series([item for sublist in temp_data.parent for item in sublist])
         temp_data = temp_data.value_counts()
+        # Add to dict for printing to file
+        output[item] = temp_data.describe()
         # create histogram
         bins = [i for i in range(0, 40, 1)]
         plt.hist(temp_data, bins=bins)
         plt.xlabel("{}".format(option[item]))
         plt.savefig("{}/histogram_{}.png".format(OUTDIR, option[item]))
         plt.close()
+
+    with open("{}/transcriptgene_exontranscript_information.txt".format(OUTDIR), "w+", newline="") as file:
+        for item, value in option.items():
+            file.write("{}\n".format(value))
+            output[item].to_csv(file, sep="\t")
+            file.write("\n")
+
 
     # Exon length distribution for all types
     bins = [i for i in range(0, 1000, 10)]
