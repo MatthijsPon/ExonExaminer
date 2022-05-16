@@ -167,7 +167,7 @@ def main():
     with open("{}/genes_ratio_biggerequal_0.csv".format(out_dir), "w+") as outfile:
         outfile.write(",".join(ratio_higher))
     with open("{}/genes_ratio_smaller_0.csv".format(out_dir), "w+") as outfile:
-        outfile.write(",".join(ratio_higher))
+        outfile.write(",".join(ratio_lower))
 
     investigate_normality_plots(results, "ratio", out_dir, "ratio")
 
