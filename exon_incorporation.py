@@ -28,8 +28,10 @@ def parse_arguments():
                         help="output directory (incl. trailing \"/\"), default: ./data/out/")
     parser.add_argument("sizes_of_interest", type=int, nargs="+",
                         help="size cutoff(s) for selecting exon sizes")
+    parser.add_argument("--temp_dir", type=str, default=None,
+                        help="Temporary directory to save files for faster re-analysis")
     args = parser.parse_args()
-    return args.gff3_file, args.out_dir, args.sizes_of_interest
+    return args.gff3_file, args.out_dir, args.sizes_of_interest, args.temp_dir
 
 
 def exon_transcript_presence(gene_df, target_exon):
@@ -136,13 +138,13 @@ def statistical_information(result_df, out_file, out_dir, size):
 
 def main():
     """Main function."""
-    gff_file, out_dir, sizes_of_interest = parse_arguments()
+    gff_file, out_dir, sizes_of_interest, temp_dir = parse_arguments()
 
     ids = []
     exon_sizes = []
     ratios = []
 
-    if not os.path.exists("./data/temp/exon_incorporation.pickle"):
+    if not temp_dir or os.path.exists("{}/exon_incorporation.pickle".format(temp_dir)):
         with open(gff_file) as file:
             for gene in yield_single_gene(file):
                 internal_exons = get_internal_exons(gene)
@@ -157,9 +159,10 @@ def main():
                         exon_sizes.append(int(size))
         # Create DF from exon size and ratio
         results = pd.DataFrame({"id": ids, "exon_size": exon_sizes, "ratio": ratios})
-        results.to_pickle("./data/temp/exon_incorporation.pickle")
+        if temp_dir:
+            results.to_pickle("{}/exon_incorporation.pickle".format(temp_dir))
     else:
-        results = pd.read_pickle("./data/temp/exon_incorporation.pickle") 
+        results = pd.read_pickle("{}/exon_incorporation.pickle".format(temp_dir))
 
     ratio_higher = results.loc[results["ratio"] >= 0, "id"]
     ratio_lower = results.loc[results["ratio"] < 0, "id"]
