@@ -5,7 +5,6 @@ Description:
 """
 
 import os
-
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -66,7 +65,7 @@ def row_statistics(gff_df, row, out_folder, out_file):
     """"""
 
 
-def exon_len_histograms(exon_df, out_folder, fig_name, bins, max_height=0):
+def exon_len_histograms(exon_df, out_folder, fig_name, bins, title=None, max_height=0):
     """Make histograms based on length
 
     :param exon_df: pandas dataframe, exon dataframe
@@ -76,10 +75,12 @@ def exon_len_histograms(exon_df, out_folder, fig_name, bins, max_height=0):
     :param max_height: int, determine max height of Y-axis
     :return: None, function creates .png file
     """
+    if not title:
+        title = fig_name
 
     # Create the plot and set name and axis titles
-    exon_df["size"].plot.hist(bins=bins, title=fig_name)
-    plt.xlabel("exon size (bp)")
+    exon_df["size"].plot.hist(bins=bins, title=title)
+    plt.xlabel("Exon size (nt)")
     if max_height > 0:
         plt.ylim([0, max_height])
 
@@ -103,6 +104,21 @@ def main():
     else:
         gff = pd.read_pickle("{}/parsed_human_gff.pickle".format(TEMP))
 
+    # Create histogram of transcripts/gene and exons/transcript
+    option = {"transcript": "transcripts per gene",
+              "exon": "exons per transcripts"}
+    for item in ["transcript", "exon"]:
+        temp_data = gff.loc[gff["type"] == item]
+        # Calculate
+        temp_data = pd.Series([item for sublist in temp_data.parent for item in sublist])
+        temp_data = temp_data.value_counts()
+        # create histogram
+        bins = [i for i in range(0, 40, 1)]
+        plt.hist(temp_data, bins=bins)
+        plt.xlabel("{}".format(option[item]))
+        plt.savefig("{}/histogram_{}.png".format(OUTDIR, option[item]))
+        plt.close()
+
     # Exon length distribution for all types
     bins = [i for i in range(0, 1000, 10)]
     exon_len_histograms(gff.loc[gff["type"] == "exon"], OUTDIR, "histogram_exonlen_0-1000bp", bins)
@@ -117,9 +133,11 @@ def main():
     }
     for idx, group in gff.loc[gff["type"] == "exon"].groupby(["five_prime", "three_prime"]):
         bins = [i for i in range(0, 1000)]
-        exon_len_histograms(group, OUTDIR, "histogram_exonlen_0-1000bp_{}".format(name_dict[idx]), bins)
+        exon_len_histograms(group, OUTDIR, "histogram_exonlen_0-1000bp_{}".format(name_dict[idx]),
+                            bins, title=name_dict[idx])
         bins = [i for i in range(0, 10000, 10)]
-        exon_len_histograms(group, OUTDIR, "histogram_exonlen_0-10000bp_{}".format(name_dict[idx]), bins)
+        exon_len_histograms(group, OUTDIR, "histogram_exonlen_0-10000bp_{}".format(name_dict[idx]),
+                            bins, title=name_dict[idx])
 
     # Statistics
     stat_list = [gff.loc[gff["type"] == "exon"].describe(percentiles=[0.25, 0.5, 0.75, 0.9]).transpose()]
@@ -127,7 +145,7 @@ def main():
     for idx, group in gff.loc[gff["type"] == "exon"].groupby(["five_prime", "three_prime"]):
         stat_list.append(group.describe(percentiles=[0.25, 0.5, 0.75, 0.9]).transpose())
         stat_list[-1]["exon_type"] = name_dict[idx]
-
+    # Save statistics to txt file
     info_pd = pd.concat(stat_list).set_index("exon_type")
     info_pd.to_csv("{}/exon_statistics.txt".format(OUTDIR), sep="\t", mode="w+")
 
