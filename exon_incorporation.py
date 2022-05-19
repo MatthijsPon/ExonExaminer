@@ -136,6 +136,29 @@ def statistical_information(result_df, out_file, out_dir, size):
     plt.close()
 
 
+def scatterplot_roll_avg(data, x, y, window, out_dir, filename):
+    """"""
+    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
+    plt.grid()
+    # Line graph per group
+    plt.scatter(x=data[x], y=data[y])
+    # Quartile lines
+    plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
+    # plt.axvline(x=87, color="r", linestyle=":", label="Q.25")
+    plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
+    # plt.axvline(x=165, color="g", linestyle=":", label="Q.75")
+    # plt.axvline(x=220, color="m", linestyle=":", label="Q.9")
+    plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
+    # rolling average line
+    data['MA_group'] = data[y].rolling(window=window).mean()
+    plt.plot(data[x], data["MA_group"], color="r", label="Rolling average of {} data points".format(window))
+    plt.xlabel("Exon size (nt)")
+    plt.ylabel("Average usage")
+    plt.legend()
+    plt.savefig("{}/scatterplot_ratio_{}.png".format(out_dir, filename))
+    plt.close()
+
+
 def main():
     """Main function."""
     gff_file, out_dir, sizes_of_interest, temp_dir = parse_arguments()
@@ -144,7 +167,7 @@ def main():
     exon_sizes = []
     ratios = []
 
-    if not temp_dir or os.path.exists("{}/exon_incorporation.pickle".format(temp_dir)):
+    if not temp_dir or not os.path.exists("{}/exon_incorporation.pickle".format(temp_dir)):
         with open(gff_file) as file:
             for gene in yield_single_gene(file):
                 internal_exons = get_internal_exons(gene)
@@ -173,6 +196,31 @@ def main():
         outfile.write(",".join(ratio_lower))
 
     investigate_normality_plots(results, "ratio", out_dir, "ratio")
+
+    data = {
+        "size": [],
+        "mean_smaller": [],
+        "mean_larger": [],
+        "mean_group": [],
+        "count": []
+    }
+    # TEMP
+    step = 1
+    sizes_of_interest = [i for i in range(0, 2000, step)]
+    for size in sizes_of_interest:
+        subset = results.loc[results["exon_size"] >= size]
+        subset_small = results.loc[results["exon_size"] <= size]
+
+        if len(list(subset.loc[subset["exon_size"] < (size + step), "ratio"])) > 0:
+            data["size"].append(size)
+            data["mean_smaller"].append(statistics.fmean(list(subset_small["ratio"])))
+            data["mean_larger"].append(statistics.fmean(list(subset["ratio"])))
+            data["mean_group"].append(statistics.fmean(list(subset.loc[subset["exon_size"] < (size + step), "ratio"])))
+            data["count"].append(len(subset.index))
+    out = pd.DataFrame(data)
+
+    scatterplot_roll_avg(out, "size", "mean_group", 10, out_dir, "step1_window10")
+
 
     # Output Welch's T-test and dataframe distributions to file
     with open("{}/statistical_information.txt".format(out_dir), "w+") as out_file:
