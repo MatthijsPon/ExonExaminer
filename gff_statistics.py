@@ -104,6 +104,14 @@ def main():
     else:
         gff = pd.read_pickle("{}/parsed_human_gff.pickle".format(TEMP))
 
+    # Get no. of genes, transcripts, exons
+    genes = len(gff.loc[gff["type"] == "gene"].index)
+    trans = len(gff.loc[gff["type"] == "transcript"].index)
+    exons = len(gff.loc[gff["type"] == "exon"].index)
+    with open("{}/exon_statistics.txt".format(OUTDIR), "w+") as outfile:
+        outfile.write("# General information:\nNo. of genes: {}\nNo. of transcripts: {}\nNo. of exons: {}\n\n"
+                      "".format(genes, trans, exons))
+
     # Create histogram of transcripts/gene and exons/transcript
     option = {"transcript": "transcripts per gene",
               "exon": "exons per transcripts"}
@@ -128,7 +136,6 @@ def main():
             output[item].to_csv(file, sep="\t")
             file.write("\n")
 
-
     # Exon length distribution for all types
     bins = [i for i in range(0, 1000, 10)]
     exon_len_histograms(gff.loc[gff["type"] == "exon"], OUTDIR, "histogram_exonlen_0-1000bp", bins)
@@ -150,14 +157,15 @@ def main():
                             bins, title=name_dict[idx])
 
     # Statistics
-    stat_list = [gff.loc[gff["type"] == "exon"].describe(percentiles=[0.25, 0.5, 0.75, 0.9]).transpose()]
+    percentiles = [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]
+    stat_list = [gff.loc[gff["type"] == "exon"].describe(percentiles=percentiles).transpose()]
     stat_list[0]["exon_type"] = "All"
     for idx, group in gff.loc[gff["type"] == "exon"].groupby(["five_prime", "three_prime"]):
-        stat_list.append(group.describe(percentiles=[0.25, 0.5, 0.75, 0.9]).transpose())
+        stat_list.append(group.describe(percentiles=percentiles).transpose())
         stat_list[-1]["exon_type"] = name_dict[idx]
     # Save statistics to txt file
     info_pd = pd.concat(stat_list).set_index("exon_type")
-    info_pd.to_csv("{}/exon_statistics.txt".format(OUTDIR), sep="\t", mode="w+")
+    info_pd.to_csv("{}/exon_statistics.txt".format(OUTDIR), sep="\t", mode="a+")
 
 
 if __name__ == '__main__':
