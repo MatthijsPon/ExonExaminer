@@ -121,8 +121,11 @@ def main():
         # Calculate
         temp_data = pd.Series([item for sublist in temp_data.parent for item in sublist])
         temp_data = temp_data.value_counts()
+        to_file = temp_data.describe()
+        to_file["mode"] = temp_data.mode().iloc[0]
+        to_file["median"] = temp_data.median()
         # Add to dict for printing to file
-        output[item] = temp_data.describe()
+        output[item] = to_file
         # create histogram
         bins = [i for i in range(0, 40, 1)]
         plt.hist(temp_data, bins=bins)
