@@ -1,5 +1,5 @@
 GFF_DIR = "data/ENSEMBL"
-GFFS = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee"]
+GFFS = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee", "c.elegans", "zebrafish", "chicken", "arabidopsis_thaliana"]
 OUTDIR = "data/out"
 
 rule all:
@@ -14,7 +14,7 @@ rule exon_incorporation_script:
         "{outdir}/{gff}/statistical_information.txt",
     params:
         out_dir="data/out/{gff}/",
-        sizes="0 500 1000 2500",
+        sizes="0 100 250  500 1000 2500",
     threads: 1
     shell:
         "python3 exon_incorporation.py {input.gff3} {params.out_dir} {params.sizes}"

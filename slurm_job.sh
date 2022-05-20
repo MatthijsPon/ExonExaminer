@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=12gb
-#SBATCH --time=01:00:00
+#SBATCH --time=02:30:00
 #SBATCH --output=logs/exon_examiner_%j.log
 
 module load tools/miniconda/python3.8/4.9.2
