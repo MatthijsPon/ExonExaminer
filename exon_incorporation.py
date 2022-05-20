@@ -197,6 +197,11 @@ def main():
 
     investigate_normality_plots(results, "ratio", out_dir, "ratio")
 
+    # Output Welch's T-test and dataframe distributions to file
+    with open("{}/statistical_information.txt".format(out_dir), "w+") as out_file:
+        for size in sizes_of_interest:
+            statistical_information(results, out_file, out_dir, size)
+
     data = {
         "size": [],
         "mean_smaller": [],
@@ -220,12 +225,6 @@ def main():
     out = pd.DataFrame(data)
 
     scatterplot_roll_avg(out, "size", "mean_group", 10, out_dir, "step1_window10")
-
-
-    # Output Welch's T-test and dataframe distributions to file
-    with open("{}/statistical_information.txt".format(out_dir), "w+") as out_file:
-        for size in sizes_of_interest:
-            statistical_information(results, out_file, out_dir, size)
 
 
 if __name__ == '__main__':
