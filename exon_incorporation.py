@@ -58,9 +58,9 @@ def ratio_transcripts_exon(gene_df, target_exon=None):
     # Determine how many transcripts are present
     all_trans = gene_df.loc[gene_df["type"] == "transcript", "id"].nunique()
     # Determine how many transcripts contain exon
-    target_trans = gene_df.loc[gene_df["id"] == target_exon, "parent"].nunique()
+    target_trans = exon_transcript_presence(gene_df, target_exon)
     target_ratio = float(target_trans) / all_trans
-    # Get all non-target internal exons
+    # Get all internal exons
     internal_exons = get_internal_exons(gene_df)
     if not internal_exons:
         return None
@@ -159,6 +159,29 @@ def scatterplot_roll_avg(data, x, y, window, out_dir, filename):
     plt.close()
 
 
+def cumulative_barplot(out, x, y, out_dir, filename):
+    """"""
+    plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8)})
+    # Update axes
+    plt.xticks([0, 50, 150, 250, 350, 500, 750, 1000, 1250, 1500, 1750, 2000])
+    plt.xlabel("Size (nt)")
+    plt.ylabel("Cumulative ratio (all genes)")
+    plt.yticks([0])
+    plt.bar(x=out[x], height=out[y])
+    # Human genome quartiles (.05, .50, .95)
+    plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
+    plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
+    plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
+    plt.legend()
+    plt.savefig("{}/{}.png".format(out_dir, filename))
+    plt.close()
+
+    # Output lowest and highest value, to determine peaks
+    print(out.loc[out[y] == out[y].min()])
+    print(out.loc[out[y] == out[y].max()])
+    return None
+
+
 def main():
     """Main function."""
     gff_file, out_dir, sizes_of_interest, temp_dir = parse_arguments()
@@ -175,7 +198,7 @@ def main():
                     continue  # If there are no internal exons, skip the ratios
                 for exon in internal_exons:
                     ratio = ratio_transcripts_exon(gene, target_exon=exon)
-                    if ratio:
+                    if ratio is not None:
                         ids.append(exon)
                         ratios.append(ratio)
                         size = gene.loc[gene["id"] == exon, "size"].iloc[0]
@@ -204,8 +227,35 @@ def main():
 
     data = {
         "size": [],
+        "sum_smaller": [],
+        "mean_group": [],
+        "count": []
+    }
+    # TEMP
+    step = 1
+    sizes_of_interest = [i for i in range(0, 2000, step)]
+    for size in sizes_of_interest:
+        subset = results.loc[results["exon_size"] >= size]
+        subset_small = results.loc[results["exon_size"] <= size]
+
+        if len(list(subset.loc[subset["exon_size"] < (size + step), "ratio"])) > 0:
+            data["size"].append(size)
+            data["sum_smaller"].append(sum(list(subset_small["ratio"])))
+            data["mean_group"].append(statistics.fmean(list(subset.loc[subset["exon_size"] < (size + step), "ratio"])))
+            data["count"].append(len(subset.index))
+    out = pd.DataFrame(data)
+
+    scatterplot_roll_avg(out, "size", "mean_group", 10, out_dir, "step1_window10")
+    cumulative_barplot(out, "size", "sum_smaller", out_dir, "barplot_cumulative")
+
+
+def old():
+    """
+       data = {
+        "size": [],
         "mean_smaller": [],
         "mean_larger": [],
+        "sum_smaller": [],
         "mean_group": [],
         "count": []
     }
@@ -220,11 +270,38 @@ def main():
             data["size"].append(size)
             data["mean_smaller"].append(statistics.fmean(list(subset_small["ratio"])))
             data["mean_larger"].append(statistics.fmean(list(subset["ratio"])))
+            data["sum_smaller"].append(sum(list(subset_small["ratio"])))
             data["mean_group"].append(statistics.fmean(list(subset.loc[subset["exon_size"] < (size + step), "ratio"])))
             data["count"].append(len(subset.index))
     out = pd.DataFrame(data)
+    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
+    plt.bar(x=out["size"], height=out["mean_larger"])
+    # Quartile lines
+    plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
+    plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
+    plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
+    plt.savefig("{}/barplot_larger_than.png".format(out_dir))
+    plt.close()
 
-    scatterplot_roll_avg(out, "size", "mean_group", 10, out_dir, "step1_window10")
+    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
+    plt.bar(x=out["size"], height=out["mean_smaller"])
+    # Quartile lines
+    plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
+    plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
+    plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
+    plt.savefig("{}/barplot_smaller_than.png".format(out_dir))
+    plt.close()
+    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
+    plt.bar(x=out["size"], height=out["mean_smaller"])
+    plt.ylim(-0.1, 0.1)
+    # Quartile lines
+    plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
+    plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
+    plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
+    plt.savefig("{}/barplot_smaller_than_ylim.png".format(out_dir))
+    plt.close()
+    """
+    return None
 
 
 if __name__ == '__main__':
