@@ -146,14 +146,18 @@ def ratio_expression_exon(gene_df, expression_df, target_exon=None):
     :param gene_df: pandas dataframe, dataframe of a single gene
     :param expression_df: pandas dataframe, expression dataframe
     :param target_exon: str, ID of target exon (default: None)
-    :return: float, ratio
+    :return: (float, int), ratio and exit code
+
+    exit code can be deciphered using the function: determine_error_code()
     """
+    # Set exit code to 0 (nothing wrong)
+    exit_code = 0
 
     # If no target exon ID is given, determine which exon is the largest and take that ID
     if not target_exon:
         target_exon = determine_target_exon(gene_df, target="largest_internal")
         if not target_exon:
-            return None
+            return None, None
     # Determine in which transcripts this exon is present
     target_trans = list(gene_df.loc[gene_df["id"] == target_exon, "parent"])
     all_trans = list(gene_df.loc[gene_df["type"] == "transcript", "id"])
@@ -162,21 +166,60 @@ def ratio_expression_exon(gene_df, expression_df, target_exon=None):
     subset_target = subset_all.loc[subset_all["trans_id"].isin(target_trans)]
     subset_all = subset_all.set_index("trans_id")
     subset_target = subset_target.set_index("trans_id")
+
+    if len(subset_all.index) != len(all_trans):
+        # Set exit code to 1 (not all transcripts measured within a gene)
+        exit_code += 1
+
+    # Determine total and target expression
     total_exp_all = subset_all.sum(axis=1)
-    # # Couple expression to target transcripts
+    for item in total_exp_all:
+        if item == 0.0 and exit_code < 2:
+            # Add 2 to exit code (at least one transcript has no expression (expr = 0.0))
+            exit_code += 2
+
     total_exp_target = subset_target.sum(axis=1)
-    # total_exp_target = subset_target.loc[:, subset_target.columns != "trans_id"].sum()
     if len(total_exp_all) == 0:  # If the gene is not measured, discard the ratio
-        return None
+        return None, None
     total_all = stats.fmean(list(total_exp_all))
     if total_all == 0.0:  # If there is no expression measured at all, discard the ratio
-        return None
-    if len(total_exp_target) == 0:  # Target transcript was not measured, return None
-        return None
+        return None, None
+    if len(total_exp_target) == 0:
+        # Add 4 to exit code (target transcript was not measured)
+        exit_code += 4
+        total_target = 0.0
+    else:
+        total_target = stats.fmean(list(total_exp_target))
 
-    total_target = stats.fmean(list(total_exp_target))
+    if total_target == 0.0:
+        # Add 8 to exit code (target transcripts were not expressed)
+        exit_code += 8
+
+    if len(all_trans) == 1:
+        # Add 16 to exit code (target exon is from single transcript gene)
+        exit_code += 16
+
     ratio = total_target / total_all
-    return ratio
+    return ratio, exit_code
+
+
+def determine_error_code(error_code):
+    """"""
+    codes = {
+        1: "not all transcripts measured within the gene",
+        2: "at least one transcript has no expression",
+        4: "target transcript was not measured",
+        8: "target transcripts were not expressed",
+        16: "target exon is from single transcript gene",
+    }
+    keys = list(codes.keys())
+    keys.sort(reverse=True)
+    errors = {}
+    for key in keys:
+        if error_code // key > 0:
+            error_code -= key
+            errors[key] = codes[key]
+    return errors
 
 
 def create_full_scatterplot(data, out_dir, complexity):
@@ -209,19 +252,50 @@ def create_zoom_scatterplot(data, out_dir, complexity):
     plt.close()
 
 
+def coloured_scatterplot(data, x, y, colour, out_dir, fig_name, colour_subgroups=False, x_max=None):
+    """"""
+    plt.rcParams.update({"figure.figsize": (19.2, 16.8)})
+    if not colour_subgroups:
+        plt.scatter(x=data[x], y=data[y], s=3, c=colour)
+    else:
+        plt.scatter(x=data.loc[data["error"] >= 16, x],
+                    y=data.loc[data["error"] >= 16, y], s=3, c="Black", label="Single exon genes")
+        plt.scatter(x=data.loc[(data["error"] > 0) & (data["error"] <= 4), x],
+                    y=data.loc[(data["error"] > 0) & (data["error"] <= 4), y],
+                    s=3, c="Green", label="At least one transcript not measured")
+        plt.scatter(x=data.loc[data["error"] == 0, x],
+                    y=data.loc[data["error"] == 0, y], s=3, c=colour, label="Multiple transcripts, multiple exons")
+        plt.legend()
+    if not x_max:
+        plt.xlim(left=-250)
+    else:
+        plt.xlim(left=-250, right=x_max)
+    plt.ylim(bottom=-0.5, top=8)
+    plt.savefig("{}/{}.png".format(out_dir, fig_name))
+    plt.close()
+    return None
+
+
 def color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_genes):
     """"""
-    data_high = data.loc[data["id"].isin(bigger_genes)].loc[data["size"] < 5000]
-    data_low = data.loc[data["id"].isin(smaller_genes)].loc[data["size"] < 5000]
-    plt.rcParams.update({"figure.figsize": (19.2, 16.8)})
-    fig, ax = plt.subplots()
-    ax.scatter(x=data_low["size"], y=data_low["ratio"], s=3, c="Blue", label="Exon usage < 0")
-    ax.scatter(x=data_high["size"], y=data_high["ratio"], s=3,  c="Yellow", label="Exon usage >= 0")
-    plt.xlim(right=5000)
-    plt.ylim(top=3)
-    ax.legend()
-    plt.savefig("{}/scatterplot_split_on_usage.png".format(out_dir))
-    plt.close()
+    # Exon usage ratio < 0
+    data_low = data.loc[data["id"].isin(smaller_genes)]
+    coloured_scatterplot(data_low, "size", "ratio", "Blue", out_dir,
+                         "scatterplot_low_usage")
+    coloured_scatterplot(data_low, "size", "ratio", "Blue", out_dir,
+                         "scatterplot_low_usage_colour", colour_subgroups=True)
+    coloured_scatterplot(data_low, "size", "ratio", "Blue", out_dir,
+                         "scatterplot_low_usage_colour_zoom", colour_subgroups=True, x_max=5000)
+
+    # Exon usage ratio >= 0
+    data_high = data.loc[data["id"].isin(bigger_genes)]
+    coloured_scatterplot(data_high, "size", "ratio", "Red", out_dir,
+                         "scatterplot_high_usage")
+    coloured_scatterplot(data_high, "size", "ratio", "Red", out_dir,
+                         "scatterplot_high_usage_colour", colour_subgroups=True)
+    coloured_scatterplot(data_high, "size", "ratio", "Red", out_dir,
+                         "scatterplot_high_usage_colour_zoom", colour_subgroups=True, x_max=5000)
+    return None
 
 
 def main():
@@ -234,7 +308,8 @@ def main():
         data = {
             "id": [],
             "size": [],
-            "ratio": []
+            "ratio": [],
+            "error": []
         }
         with open(gff) as file:
             for gene_df in yield_single_gene(file):
@@ -243,11 +318,12 @@ def main():
                 if internal_exons is None:
                     continue  # If there are no internal exons, skip the gene
                 for exon in internal_exons:
-                    ratio = ratio_expression_exon(gene_df, expression_df, target_exon=exon)
+                    ratio, error_code = ratio_expression_exon(gene_df, expression_df, target_exon=exon)
                     if ratio:
                         data["id"].append(exon)  # Number of transcripts in gene
                         data["size"].append(gene_df.loc[gene_df["id"] == exon, "size"].iloc[0])
                         data["ratio"].append(ratio)  # Ratio expression largest exon / total expression
+                        data["error"].append(error_code)
                     else:  # If there is no ratio, skip the exon
                         continue
         data = pd.DataFrame(data)
@@ -268,6 +344,23 @@ def main():
         color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_genes)
 
     # TODO Create boxplots
+    return None
+
+
+def old():
+    """
+    # Combined plot
+    fig, ax = plt.subplots()
+    ax.scatter(x=data_low["size"], y=data_low["ratio"], s=3, c="Blue", label="Exon usage < 0")
+    ax.scatter(x=data_high["size"], y=data_high["ratio"], s=3,  c="Red", label="Exon usage >= 0")
+    ax.legend()
+    plt.savefig("{}/scatterplot_split_on_usage.png".format(out_dir))
+    plt.xlim(right=5000)
+    plt.ylim(top=3)
+    ax.legend()
+    plt.savefig("{}/scatterplot_split_on_usage_zoom.png".format(out_dir))
+    plt.close()
+    """
     return None
 
 
