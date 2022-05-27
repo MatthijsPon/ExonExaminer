@@ -186,10 +186,13 @@ def main():
     """Main function."""
     gff_file, out_dir, sizes_of_interest, temp_dir = parse_arguments()
 
-    ids = []
-    exon_sizes = []
-    ratios = []
-    no_trans = []
+    ratio_dict = {
+        "id": [],
+        "exon_size": [],
+        "ratio": [],
+        "no_trans": [],
+        "parent_gene": []
+    }
 
     if not temp_dir or not os.path.exists("{}/exon_incorporation.pickle".format(temp_dir)):
         with open(gff_file) as file:
@@ -201,13 +204,14 @@ def main():
                 for exon in internal_exons:
                     ratio = ratio_transcripts_exon(gene, target_exon=exon)
                     if ratio is not None:
-                        ids.append(exon)
-                        ratios.append(ratio)
+                        ratio_dict["id"].append(exon)
+                        ratio_dict["ratio"].append(ratio)
                         size = gene.loc[gene["id"] == exon, "size"].iloc[0]
-                        exon_sizes.append(int(size))
-                        no_trans.append(trans_amount)
-                        # Create DF from exon size and ratio
-        results = pd.DataFrame({"id": ids, "exon_size": exon_sizes, "ratio": ratios, "no_trans": no_trans})
+                        ratio_dict["exon_size"].append(int(size))
+                        ratio_dict["no_trans"].append(trans_amount)
+                        ratio_dict["parent_gene"].append(gene.loc[gene["type"] == "gene", "id"].iloc[0])
+        # Create DF from exon size and ratio
+        results = pd.DataFrame(ratio_dict)
         if temp_dir:
             results.to_pickle("{}/exon_incorporation.pickle".format(temp_dir))
     else:
