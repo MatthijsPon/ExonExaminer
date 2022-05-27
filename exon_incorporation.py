@@ -189,6 +189,7 @@ def main():
     ids = []
     exon_sizes = []
     ratios = []
+    no_trans = []
 
     if not temp_dir or not os.path.exists("{}/exon_incorporation.pickle".format(temp_dir)):
         with open(gff_file) as file:
@@ -196,6 +197,7 @@ def main():
                 internal_exons = get_internal_exons(gene)
                 if internal_exons is None:
                     continue  # If there are no internal exons, skip the ratios
+                trans_amount = int(gene.loc[gene["type"] == "transcript", "id"].nunique())
                 for exon in internal_exons:
                     ratio = ratio_transcripts_exon(gene, target_exon=exon)
                     if ratio is not None:
@@ -203,8 +205,9 @@ def main():
                         ratios.append(ratio)
                         size = gene.loc[gene["id"] == exon, "size"].iloc[0]
                         exon_sizes.append(int(size))
-        # Create DF from exon size and ratio
-        results = pd.DataFrame({"id": ids, "exon_size": exon_sizes, "ratio": ratios})
+                        no_trans.append(trans_amount)
+                        # Create DF from exon size and ratio
+        results = pd.DataFrame({"id": ids, "exon_size": exon_sizes, "ratio": ratios, "no_trans": no_trans})
         if temp_dir:
             results.to_pickle("{}/exon_incorporation.pickle".format(temp_dir))
     else:
@@ -232,6 +235,7 @@ def main():
         "count": []
     }
     # TEMP
+    # TODO remove single transcript genes?
     step = 1
     sizes_of_interest = [i for i in range(0, 2000, step)]
     for size in sizes_of_interest:
