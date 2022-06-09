@@ -104,6 +104,7 @@ def main():
     else:
         gff = pd.read_pickle("{}/parsed_human_gff.pickle".format(TEMP))
 
+    gff = gff.loc[gff["chromosome"] != "MT"]
     # Get no. of genes, transcripts, exons
     genes = len(gff.loc[gff["type"] == "gene"].index)
     trans = len(gff.loc[gff["type"] == "transcript"].index)
@@ -113,23 +114,30 @@ def main():
                       "".format(genes, trans, exons))
 
     # Create histogram of transcripts/gene and exons/transcript
-    option = {"transcript": "transcripts per gene",
-              "exon": "exons per transcripts"}
+    option = {"gene": "Genes per chromosome",
+              "transcript": "Transcripts per gene",
+              "exon": "Exons per transcripts"}
     output = {}
-    for item in ["transcript", "exon"]:
+    for item in ["gene", "transcript", "exon"]:
         temp_data = gff.loc[gff["type"] == item]
         # Calculate
-        temp_data = pd.Series([item for sublist in temp_data.parent for item in sublist])
-        temp_data = temp_data.value_counts()
+        if item == "gene":
+            temp_data = pd.Series([item for item in temp_data.chromosome])
+            temp_data = temp_data.value_counts()
+        else:
+            temp_data = pd.Series([item for sublist in temp_data.parent for item in sublist])
+            temp_data = temp_data.value_counts()
         to_file = temp_data.describe()
         to_file["mode"] = temp_data.mode().iloc[0]
         to_file["median"] = temp_data.median()
+        print(temp_data)
         # Add to dict for printing to file
         output[item] = to_file
         # create histogram
         bins = [i for i in range(0, 40, 1)]
         plt.hist(temp_data, bins=bins)
         plt.xlabel("{}".format(option[item]))
+        plt.ylabel("Count")
         plt.savefig("{}/histogram_{}.png".format(OUTDIR, option[item]))
         plt.close()
 
