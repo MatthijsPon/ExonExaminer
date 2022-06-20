@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Author: Matthijs Pon
-Description:
+Description: Convert the exons of a pandas dataframe (pickle) to a bed file.
 """
 import pandas as pd
 import argparse as arg
@@ -33,7 +33,7 @@ def write_to_bed(df, chrom, start, stop, item_id, out_file):
     :return: None, file is created
     """
     columns = [chrom, start, stop, item_id]
-    df[columns].to_csv(out_file, sep="\t", index=False)
+    df[columns].to_csv(out_file, sep="\t", index=False, header=False)
     return None
 
 
