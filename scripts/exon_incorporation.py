@@ -4,15 +4,13 @@ Author: Matthijs Pon
 Description: This script parses an ENSEMBL gff3 file and determines the average
              inclusion of exons compared to their length.
 """
-import os
-
 from helpers import get_internal_exons, yield_single_gene, determine_target_exon
 from matplotlib import pyplot as plt
 
+import os
 import argparse as arg
 import pandas as pd
 import scipy.stats as stats
-
 import statistics
 
 
@@ -91,6 +89,7 @@ def investigate_normality_plots(data, column_of_interest, out_dir, filename):
     stats.probplot(data[column_of_interest], dist="norm", plot=plt)  # QQ plot
     plt.savefig("{}/{}_QQ_plot_vs_normal_distribution.png".format(out_dir, filename))
     plt.close()
+    return None
 
 
 def statistical_information(result_df, out_file, out_dir, size):
@@ -134,10 +133,20 @@ def statistical_information(result_df, out_file, out_dir, size):
     subset.plot(x="exon_size", y="ratio", style="o")
     plt.savefig("{}/internal_exon_ratio_{}+.png".format(out_dir, size))
     plt.close()
+    return None
 
 
 def scatterplot_roll_avg(data, x, y, window, out_dir, filename):
-    """"""
+    """Create a scatter plot with a moving average.
+
+    :param data: 2d object (e.g. pandas dataframe) with data to plot
+    :param x: str/index, index to access x values of data
+    :param y: str/index, index to access y values of data
+    :param window: int, no. of data points to use in the rolling average
+    :param out_dir: str, output directory
+    :param filename: str, output filename
+    :return: None, files are created
+    """
     plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
     plt.grid()
     # Line graph per group
@@ -157,17 +166,26 @@ def scatterplot_roll_avg(data, x, y, window, out_dir, filename):
     plt.legend()
     plt.savefig("{}/scatterplot_ratio_{}.png".format(out_dir, filename))
     plt.close()
+    return None
 
 
-def cumulative_barplot(out, x, y, out_dir, filename):
-    """"""
+def cumulative_barplot(data, x, y, out_dir, filename):
+    """Create a comolative barplot.
+
+    :param data: pandas dataframe object, with data to plot
+    :param x: str/index, index to access x values of data
+    :param y: str/index, index to access y values of data
+    :param out_dir: str, output directory
+    :param filename: str, output filename
+    :return: None, files are created
+    """
     plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8)})
     # Update axes
     plt.xticks([0, 50, 150, 250, 350, 500, 750, 1000, 1250, 1500, 1750, 2000])
     plt.xlabel("Size (nt)")
     plt.ylabel("Cumulative ratio (all genes)")
     plt.yticks([0])
-    plt.bar(x=out[x], height=out[y])
+    plt.bar(x=data[x], height=data[y])
     # Human genome quartiles (.05, .50, .95)
     plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
     plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
@@ -177,8 +195,8 @@ def cumulative_barplot(out, x, y, out_dir, filename):
     plt.close()
 
     # Output lowest and highest value, to determine peaks
-    print(out.loc[out[y] == out[y].min()])
-    print(out.loc[out[y] == out[y].max()])
+    print(data.loc[data[y] == data[y].min()])
+    print(data.loc[data[y] == data[y].max()])
     return None
 
 
@@ -253,63 +271,10 @@ def main():
             data["count"].append(len(subset.index))
     out = pd.DataFrame(data)
 
-    scatterplot_roll_avg(out, "size", "mean_group", 10, out_dir, "step1_window10")
+    scatterplot_roll_avg(out, "size", "mean_group", 15, out_dir, "step1_window15")
+    scatterplot_roll_avg(out, "size", "mean_group", 20, out_dir, "step1_window20")
+    scatterplot_roll_avg(out, "size", "mean_group", 25, out_dir, "step1_window25")
     cumulative_barplot(out, "size", "sum_smaller", out_dir, "barplot_cumulative")
-
-
-def old():
-    """
-       data = {
-        "size": [],
-        "mean_smaller": [],
-        "mean_larger": [],
-        "sum_smaller": [],
-        "mean_group": [],
-        "count": []
-    }
-    # TEMP
-    step = 1
-    sizes_of_interest = [i for i in range(0, 2000, step)]
-    for size in sizes_of_interest:
-        subset = results.loc[results["exon_size"] >= size]
-        subset_small = results.loc[results["exon_size"] <= size]
-
-        if len(list(subset.loc[subset["exon_size"] < (size + step), "ratio"])) > 0:
-            data["size"].append(size)
-            data["mean_smaller"].append(statistics.fmean(list(subset_small["ratio"])))
-            data["mean_larger"].append(statistics.fmean(list(subset["ratio"])))
-            data["sum_smaller"].append(sum(list(subset_small["ratio"])))
-            data["mean_group"].append(statistics.fmean(list(subset.loc[subset["exon_size"] < (size + step), "ratio"])))
-            data["count"].append(len(subset.index))
-    out = pd.DataFrame(data)
-    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
-    plt.bar(x=out["size"], height=out["mean_larger"])
-    # Quartile lines
-    plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
-    plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
-    plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
-    plt.savefig("{}/barplot_larger_than.png".format(out_dir))
-    plt.close()
-
-    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
-    plt.bar(x=out["size"], height=out["mean_smaller"])
-    # Quartile lines
-    plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
-    plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
-    plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
-    plt.savefig("{}/barplot_smaller_than.png".format(out_dir))
-    plt.close()
-    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
-    plt.bar(x=out["size"], height=out["mean_smaller"])
-    plt.ylim(-0.1, 0.1)
-    # Quartile lines
-    plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
-    plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
-    plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
-    plt.savefig("{}/barplot_smaller_than_ylim.png".format(out_dir))
-    plt.close()
-    """
-    return None
 
 
 if __name__ == '__main__':
