@@ -5,11 +5,8 @@ Description:
 """
 
 import argparse as arg
-
 import numpy as np
-
 from helpers import yield_gff_line, determine_gff
-
 import pandas as pd
 from numpy.core.defchararray import zfill
 
@@ -31,6 +28,11 @@ def parse_arguments():
 
 
 def parse_gff(file):
+    """Parse gene ID and alternative names from gff3 files
+
+    :param file: iterable, open gff3 file object
+    :return: pandas dataframe object, gff3 ids and names
+    """
     data = {
         "ids": [],
         "names": []
@@ -48,6 +50,7 @@ def parse_gff(file):
 
 
 def main():
+    """Main function"""
     # Parse args
     infile, outfile, genome_names = parse_arguments()
     # Read in orthologs
@@ -72,7 +75,6 @@ def main():
     df.dropna(inplace=True)
     df.to_csv("./data/temp/hum_mou_no_NA.tsv", columns=["human ID", "human alt name", "mouse ID", "mouse alt name"],
               sep="\t", index=False)
-
     ### End of gene synonyms ###
 
     # Output to ExOrthist required file
