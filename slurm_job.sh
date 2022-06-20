@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mnpon_exonexaminer
+#SBATCH --job-name=exonexaminer
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=m.n.pon@lumc.nl
 #SBATCH --nodes=1
