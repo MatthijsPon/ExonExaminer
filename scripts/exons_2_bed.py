@@ -28,6 +28,8 @@ def main():
     out_file = "data/out/exons_2_bed/human_exons.bed"
     df = pd.read_pickle(in_file)
     df = df.loc[df["type"] == "exon"]
+    # BedTools sees the stop index as non-inclusive, but gff3 sees it as inclusive
+    df["stop"] += 1
     write_to_bed(df, "chromosome", "start", "stop", "id", out_file)
     return None
 
