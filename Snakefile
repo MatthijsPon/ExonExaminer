@@ -7,7 +7,7 @@ rule all:
     input:
         expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_TEMP),
-        "output/ exon_gc / full_gc_analysis.txt"
+        "output/exon_gc/full_gc_analysis.txt"
 
 
 rule exon_incorporation_script:
