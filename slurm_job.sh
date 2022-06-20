@@ -10,6 +10,7 @@
 #SBATCH --output=logs/exon_examiner_%j.log
 
 module load tools/miniconda/python3.8/4.9.2
+module load genomics/ngs/bedtools2/2.29.1
 conda activate exonexaminer
 
 snakemake -j4
