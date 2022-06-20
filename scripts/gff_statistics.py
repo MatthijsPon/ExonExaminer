@@ -5,64 +5,23 @@ Description:
 """
 
 import os
-import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+import argparse as arg
 
-from helpers import yield_single_gene
 
+def parse_arguments():
+    """Parse command line arguments
 
-def determine_primes(gene_df):
-    """Create a list of all internal exons in the gene dataframe
-
-    :param gene_df: pandas dataframe, gene dataframe
-    :param remove: str, exon ID (default: None)
-    :return: set of str, exon IDs of internal exons (otherwise None)
-
-    Select exons per transcript and determine which are internal. An internal exon has a non-prime position in at
-    least one transcript. Returns all unique exon IDs.
+    :return: parsed command line options
     """
-    three_prime = set()
-    five_prime = set()
-    only_exons = gene_df[gene_df["type"] == "exon"]
-
-    for idx, group in only_exons.groupby("parent"):
-        status = group["strand"].iloc[0]
-        lowest = group.loc[group["start"] == group["start"].min(), "id"].iloc[0]
-        highest = group.loc[group["stop"] == group["stop"].max(), "id"].iloc[0]
-        if status == "+":
-            five_prime.add(lowest)
-            three_prime.add(highest)
-        else:
-            five_prime.add(highest)
-            three_prime.add(lowest)
-    # Add boolean for five and three prime to dataframe
-    gene_df["three_prime"] = np.where(gene_df["id"].isin(three_prime), True, False)
-    gene_df["five_prime"] = np.where(gene_df["id"].isin(five_prime), True, False)
-    return gene_df
-
-
-def merge_exons(gff_df):
-    """"""
-    columns = list(gff_df.columns)
-    columns.remove("parent")
-    gff_df = gff_df.groupby(columns, dropna=False)["parent"].apply(list).reset_index()
-    return gff_df
-
-
-def parse_gff_file(file_object):
-    """"""
-    gene_list = []
-    for gene in yield_single_gene(file_object):
-        gene = determine_primes(gene)
-        gene_list.append(gene)
-    gff_df = pd.concat(gene_list, ignore_index=True)
-    gff_df = merge_exons(gff_df)  # structure is lost here, due to the index resetting
-    return gff_df
-
-
-def row_statistics(gff_df, row, out_folder, out_file):
-    """"""
+    parser = arg.ArgumentParser(description="Parse a gff3 file into a pandas dataframe (.pickle) file.")
+    parser.add_argument("pickle", type=str,
+                        help="gff dataframe pickle file")
+    parser.add_argument("out_dir", type=str,
+                        help="output directory")
+    args = parser.parse_args()
+    return args.gff3_file, args.out_file
 
 
 def exon_len_histograms(exon_df, out_folder, fig_name, bins, title=None, max_height=0):
@@ -72,6 +31,7 @@ def exon_len_histograms(exon_df, out_folder, fig_name, bins, title=None, max_hei
     :param out_folder: str, path to output folder (excl. trailing "/")
     :param fig_name: str, name of output file (excl. ".png")
     :param bins: list of ints, bin borders
+    :param title: title of the figure
     :param max_height: int, determine max height of Y-axis
     :return: None, function creates .png file
     """
@@ -91,25 +51,20 @@ def exon_len_histograms(exon_df, out_folder, fig_name, bins, title=None, max_hei
 
 def main():
     """Main function."""
-    # Replace with parser if needed:
-    OUTDIR = "data/out/gff_statistics"
-    GFF = "data/Homo_sapiens.GRCh38.106.chr.gff3"
-    TEMP = "data/temp"
+    # Parse args
+    pickle, out_dir = parse_arguments()
 
-    # Actual code
-    if not os.path.exists("{}/parsed_human_gff.pickle".format(TEMP)):
-        with open(GFF) as file:
-            gff = parse_gff_file(file)
-        gff.to_pickle("{}/parsed_human_gff.pickle".format(TEMP))
-    else:
-        gff = pd.read_pickle("{}/parsed_human_gff.pickle".format(TEMP))
+    # Check if pickle exists, otherwise
+    if not os.path.exists(pickle):
+        raise FileNotFoundError("Pickle file was not found.")
+    gff = pd.read_pickle(pickle)
 
     gff = gff.loc[gff["chromosome"] != "MT"]
     # Get no. of genes, transcripts, exons
     genes = len(gff.loc[gff["type"] == "gene"].index)
     trans = len(gff.loc[gff["type"] == "transcript"].index)
     exons = len(gff.loc[gff["type"] == "exon"].index)
-    with open("{}/exon_statistics.txt".format(OUTDIR), "w+") as outfile:
+    with open("{}/exon_statistics.txt".format(out_dir), "w+") as outfile:
         outfile.write("# General information:\nNo. of genes: {}\nNo. of transcripts: {}\nNo. of exons: {}\n\n"
                       "".format(genes, trans, exons))
 
@@ -138,10 +93,10 @@ def main():
         plt.hist(temp_data, bins=bins)
         plt.xlabel("{}".format(option[item]))
         plt.ylabel("Count")
-        plt.savefig("{}/histogram_{}.png".format(OUTDIR, option[item]))
+        plt.savefig("{}/histogram_{}.png".format(out_dir, option[item]))
         plt.close()
 
-    with open("{}/transcriptgene_exontranscript_information.txt".format(OUTDIR), "w+", newline="") as file:
+    with open("{}/transcriptgene_exontranscript_information.txt".format(out_dir), "w+", newline="") as file:
         for item, value in option.items():
             file.write("{}\n".format(value))
             output[item].to_csv(file, sep="\t")
@@ -149,9 +104,9 @@ def main():
 
     # Exon length distribution for all types
     bins = [i for i in range(0, 1000, 10)]
-    exon_len_histograms(gff.loc[gff["type"] == "exon"], OUTDIR, "histogram_exonlen_0-1000bp", bins)
+    exon_len_histograms(gff.loc[gff["type"] == "exon"], out_dir, "histogram_exonlen_0-1000bp", bins)
     bins = [i for i in range(1000, 20000, 10)]
-    exon_len_histograms(gff.loc[gff["type"] == "exon"], OUTDIR, "histogram_exonlen_1000-20000bp", bins)
+    exon_len_histograms(gff.loc[gff["type"] == "exon"], out_dir, "histogram_exonlen_1000-20000bp", bins)
     # Exon length distribution per type
     name_dict = {
         (False, False): "Internal exons",
@@ -161,10 +116,10 @@ def main():
     }
     for idx, group in gff.loc[gff["type"] == "exon"].groupby(["five_prime", "three_prime"]):
         bins = [i for i in range(0, 1000)]
-        exon_len_histograms(group, OUTDIR, "histogram_exonlen_0-1000bp_{}".format(name_dict[idx]),
+        exon_len_histograms(group, out_dir, "histogram_exonlen_0-1000bp_{}".format(name_dict[idx]),
                             bins, title=name_dict[idx])
         bins = [i for i in range(0, 10000, 10)]
-        exon_len_histograms(group, OUTDIR, "histogram_exonlen_0-10000bp_{}".format(name_dict[idx]),
+        exon_len_histograms(group, out_dir, "histogram_exonlen_0-10000bp_{}".format(name_dict[idx]),
                             bins, title=name_dict[idx])
 
     # Statistics
@@ -176,7 +131,7 @@ def main():
         stat_list[-1]["exon_type"] = name_dict[idx]
     # Save statistics to txt file
     info_pd = pd.concat(stat_list).set_index("exon_type")
-    info_pd.to_csv("{}/exon_statistics.txt".format(OUTDIR), sep="\t", mode="a+")
+    info_pd.to_csv("{}/exon_statistics.txt".format(out_dir), sep="\t", mode="a+")
 
 
 if __name__ == '__main__':
