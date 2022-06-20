@@ -70,3 +70,11 @@ rule calc_gc_exons:
         "output/exon_gc/{species}_gc_exons.bed"
     shell:
         "bedtools nuc -fi {input.fa} -bed {input.bed} > {output} && rm {input.fa}"
+
+rule gc_exons_analysis:
+    input:
+        expand("output/exon_gc/{species}_gc_exons.bed",species=SPECIES_TEMP)
+    output:
+        "output/exon_gc/full_gc_analysis.txt"
+    shell:
+        "python3 scripts/gc_analysis.py {output} {input}"
