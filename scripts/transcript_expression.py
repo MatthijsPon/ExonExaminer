@@ -204,7 +204,11 @@ def ratio_expression_exon(gene_df, expression_df, target_exon=None):
 
 
 def determine_error_code(error_code):
-    """"""
+    """Determine the meaning of an error code from ratio_expression_exon().
+
+    :param error_code: int, error code
+    :return: list of str, explaination of error code
+    """
     codes = {
         1: "not all transcripts measured within the gene",
         2: "at least one transcript has no expression",
@@ -253,7 +257,18 @@ def create_zoom_scatterplot(data, out_dir, complexity):
 
 
 def coloured_scatterplot(data, x, y, colour, out_dir, fig_name, colour_subgroups=False, x_max=None):
-    """"""
+    """Create scatter plots coloured on error code.
+
+    :param data: pandas dataframe object, data to plot
+    :param x: str/index, index to access x values of data
+    :param y: str/index, index to access y values of data
+    :param colour: str, colour to paint the non-error points
+    :param out_dir: str, output directory
+    :param fig_name: str, figure name
+    :param colour_subgroups: bool, if true, error codes will have different values
+    :param x_max: int, max x value to plot
+    :return: None, files are created
+    """
     plt.rcParams.update({"figure.figsize": (19.2, 16.8)})
     if not colour_subgroups:
         plt.scatter(x=data[x], y=data[y], s=3, c=colour)
@@ -277,7 +292,14 @@ def coloured_scatterplot(data, x, y, colour, out_dir, fig_name, colour_subgroups
 
 
 def color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_genes):
-    """"""
+    """Colour a scatterplot based on the exon_incorperation of the biggest exon and error codes.
+
+    :param data: pandas dataframe object, data to plot
+    :param out_dir: str, output directory
+    :param bigger_genes: genes with biggest exon incorporation >= 0
+    :param smaller_genes: genes with biggest exon incorporation < 0
+    :return:
+    """
     # Exon usage ratio < 0
     data_low = data.loc[data["id"].isin(smaller_genes)]
     coloured_scatterplot(data_low, "size", "ratio", "Blue", out_dir,
@@ -344,23 +366,6 @@ def main():
         color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_genes)
 
     # TODO Create boxplots
-    return None
-
-
-def old():
-    """
-    # Combined plot
-    fig, ax = plt.subplots()
-    ax.scatter(x=data_low["size"], y=data_low["ratio"], s=3, c="Blue", label="Exon usage < 0")
-    ax.scatter(x=data_high["size"], y=data_high["ratio"], s=3,  c="Red", label="Exon usage >= 0")
-    ax.legend()
-    plt.savefig("{}/scatterplot_split_on_usage.png".format(out_dir))
-    plt.xlim(right=5000)
-    plt.ylim(top=3)
-    ax.legend()
-    plt.savefig("{}/scatterplot_split_on_usage_zoom.png".format(out_dir))
-    plt.close()
-    """
     return None
 
 
