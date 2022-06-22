@@ -1,7 +1,5 @@
-GFF_DIR = "data/ENSEMBL"
 SPECIES = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee", "c.elegans", "zebrafish", "chicken", "arabidopsis_thaliana"]
 SPECIES_TEMP = ["mouse", "human"]
-OUTDIR = "data/out"
 
 rule all:
     input:
@@ -10,18 +8,25 @@ rule all:
         "output/exon_gc/full_gc_analysis.txt"
 
 
+rule exon_incorporation_pickle:
+    input:
+        "input/ENSEMBL/{species}.gff3"
+    output:
+        "output/exon_incorporation/{species}_exon_usage.pickle"
+    shell:
+        "python3 scripts/exon_incorporation_pickle.py {input} {output}"
+
+
 rule exon_incorporation_script:
     input:
-        gff3="input/ENSEMBL/{species}.gff3",
+        "output/exon_incorporation/{species}_exon_usage.pickle"
     output:
-        "output/exon_incorporation/{species}/statistical_information.txt",
+        "output/exon_incorporation/{species}/statistical_information.txt"
     params:
         out_dir="output/exon_incorporation/{species}/",
-        sizes="0 100 250 500 1000 2500",
-        temp_dir="output/exon_incorporation/{species}/"
-    threads: 1
+        sizes="0 100 250 500 1000 2500"
     shell:
-        "python3 scripts/exon_incorporation.py {input.gff3} {params.out_dir} --temp_dir {params.temp_dir} {params.sizes}"
+        "python3 scripts/exon_incorporation_analysis.py {input} {params.out_dir} {params.sizes}"
 
 
 rule parse_gff3:
@@ -72,10 +77,12 @@ rule calc_gc_exons:
     shell:
         "bedtools nuc -fi {input.fa} -bed {input.bed} > {output} && rm {input.fa}"
 
+
 rule gc_exons_analysis:
     input:
-        expand("output/exon_gc/{species}_gc_exons.bed",species=SPECIES_TEMP)
+        gc=expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_TEMP),
+        usage=expand("output/exon_incorporation/{species}_exon_usage.pickle", species=SPECIES_TEMP)
     output:
         "output/exon_gc/full_gc_analysis.txt"
     shell:
-        "python3 scripts/gc_analysis.py {output} {input}"
+        "python3 scripts/gc_analysis.py {output} {input.gc} {input.usage}"

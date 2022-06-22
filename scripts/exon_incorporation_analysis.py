@@ -20,54 +20,14 @@ def parse_arguments():
     :return: parsed command line options
     """
     parser = arg.ArgumentParser(description="Determine the average inclusion of exons compared to their length.")
-    parser.add_argument("gff3_file", type=str,
-                        help="gff3 file to parse")
+    parser.add_argument("pickle_file", type=str,
+                        help="pandas pickle file create by exon_incorporation_pickle.py")
     parser.add_argument("out_dir", type=str,
                         help="output directory (incl. trailing \"/\"), default: ./data/out/")
     parser.add_argument("sizes_of_interest", type=int, nargs="+",
                         help="size cutoff(s) for selecting exon sizes")
-    parser.add_argument("--temp_dir", type=str, default=None,
-                        help="Temporary directory to save files for faster re-analysis")
     args = parser.parse_args()
-    return args.gff3_file, args.out_dir, args.sizes_of_interest, args.temp_dir
-
-
-def exon_transcript_presence(gene_df, target_exon):
-    """Determine in which transcripts an exon is present
-
-    :param gene_df: pandas dataframe, gene dataframe
-    :param target_exon: str, exon ID
-    :return: numpy list, IDs of transcripts containing target exon
-    """
-    return gene_df.loc[gene_df["id"] == target_exon, "parent"].nunique()
-
-
-def ratio_transcripts_exon(gene_df, target_exon=None):
-    """Calculate the ratio of transcripts containing exon vs all transcripts
-
-    :param gene_df: pandas dataframe, gene dataframe
-    :param target_exon: str, exon ID (default: None; will target largest internal exon)
-    :return: float, ratio of transcripts containing exon
-    """
-    if not target_exon:
-        target_exon = determine_target_exon(gene_df, target="largest_internal")
-        if not target_exon:
-            return None
-    # Determine how many transcripts are present
-    all_trans = gene_df.loc[gene_df["type"] == "transcript", "id"].nunique()
-    # Determine how many transcripts contain exon
-    target_trans = exon_transcript_presence(gene_df, target_exon)
-    target_ratio = float(target_trans) / all_trans
-    # Get all internal exons
-    internal_exons = get_internal_exons(gene_df)
-    if not internal_exons:
-        return None
-    internal_ratios = []
-    for internal_exon in internal_exons:
-        int_ex_pres = exon_transcript_presence(gene_df, internal_exon)
-        internal_ratios.append(float(int_ex_pres) / all_trans)
-    internal_ratio = statistics.fmean(internal_ratios)
-    return target_ratio - internal_ratio
+    return args.pickle_file, args.out_dir, args.sizes_of_interest
 
 
 def investigate_normality_plots(data, column_of_interest, out_dir, filename):
@@ -153,10 +113,7 @@ def scatterplot_roll_avg(data, x, y, window, out_dir, filename):
     plt.scatter(x=data[x], y=data[y])
     # Quartile lines
     plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
-    # plt.axvline(x=87, color="r", linestyle=":", label="Q.25")
     plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
-    # plt.axvline(x=165, color="g", linestyle=":", label="Q.75")
-    # plt.axvline(x=220, color="m", linestyle=":", label="Q.9")
     plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
     # rolling average line
     data['MA_group'] = data[y].rolling(window=window).mean()
@@ -202,38 +159,11 @@ def cumulative_barplot(data, x, y, out_dir, filename):
 
 def main():
     """Main function."""
-    gff_file, out_dir, sizes_of_interest, temp_dir = parse_arguments()
+    pickle_file, out_dir, sizes_of_interest = parse_arguments()
 
-    ratio_dict = {
-        "id": [],
-        "exon_size": [],
-        "ratio": [],
-        "no_trans": [],
-        "parent_gene": []
-    }
-
-    if not temp_dir or not os.path.exists("{}/exon_incorporation.pickle".format(temp_dir)):
-        with open(gff_file) as file:
-            for gene in yield_single_gene(file):
-                internal_exons = get_internal_exons(gene)
-                if internal_exons is None:
-                    continue  # If there are no internal exons, skip the ratios
-                trans_amount = int(gene.loc[gene["type"] == "transcript", "id"].nunique())
-                for exon in internal_exons:
-                    ratio = ratio_transcripts_exon(gene, target_exon=exon)
-                    if ratio is not None:
-                        ratio_dict["id"].append(exon)
-                        ratio_dict["ratio"].append(ratio)
-                        size = gene.loc[gene["id"] == exon, "size"].iloc[0]
-                        ratio_dict["exon_size"].append(int(size))
-                        ratio_dict["no_trans"].append(trans_amount)
-                        ratio_dict["parent_gene"].append(gene.loc[gene["type"] == "gene", "id"].iloc[0])
-        # Create DF from exon size and ratio
-        results = pd.DataFrame(ratio_dict)
-        if temp_dir:
-            results.to_pickle("{}/exon_incorporation.pickle".format(temp_dir))
-    else:
-        results = pd.read_pickle("{}/exon_incorporation.pickle".format(temp_dir))
+    if not os.path.exists(pickle_file):
+        raise FileNotFoundError("Pickle file does not exist.")
+    results = pd.read_pickle(pickle_file)
 
     ratio_higher = results.loc[results["ratio"] >= 0, "id"]
     ratio_lower = results.loc[results["ratio"] < 0, "id"]
