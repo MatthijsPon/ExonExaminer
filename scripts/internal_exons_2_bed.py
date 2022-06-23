@@ -47,8 +47,8 @@ def main():
     # Only take along internal exons
     df = df.loc[(df["three_prime"] is False) and (df["five_prime"] is False)]
     # BedTools sees the stop index as non-inclusive, but gff3 sees it as inclusive
-    df["stop"] = df["stop"].apply(pd.to_numeric)
-    df["stop"] += 1
+    df["start"] = df["start"].apply(pd.to_numeric)
+    df["start"] -= 1
     write_to_bed(df, "chromosome", "start", "stop", "id", out_file)
     return None
 
