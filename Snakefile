@@ -56,7 +56,7 @@ rule exons_2_bed:
     output:
         "output/exon_gc/{species}_exons.bed"
     shell:
-        "python3 scripts/exons_2_bed.py {input} {output}"
+        "python3 scripts/internal_exons_2_bed.py {input} {output}"
 
 
 rule temp_gunzip_fasta:
