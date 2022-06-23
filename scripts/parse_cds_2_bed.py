@@ -40,7 +40,8 @@ def write_to_bed(df, chrom, start, stop, strand, parent, out_file):
     :param out_file: str, output file
     :return: None, file is created
     """
-    columns = [chrom, start, stop, strand, parent]
+    df["score"] = 0
+    columns = [chrom, start, stop, parent, "score", strand]
     df[columns].to_csv(out_file, sep="\t", index=False, header=False)
     return None
 
