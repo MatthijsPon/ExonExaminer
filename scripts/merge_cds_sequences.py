@@ -27,7 +27,7 @@ def parse_cds_into_full_seq(bed):
     """Parse a bed file containing coding sequences.
 
     :param bed: iterable, open bed file
-    :return: dict, protein_id & sequence, yields one fasta sequence at a time
+    :return: dict, transcript_id & sequence, yields one fasta sequence at a time
     """
     data = {
         "target": "",
