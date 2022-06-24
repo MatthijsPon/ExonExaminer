@@ -4,11 +4,6 @@ Author: Matthijs Pon
 Description:
 """
 
-#!/usr/bin/env python3
-"""
-Author: Matthijs Pon
-Description: Convert the exons of a pandas dataframe (pickle) to a bed file.
-"""
 import pandas as pd
 import argparse as arg
 from helpers import yield_gff_line, determine_gff
