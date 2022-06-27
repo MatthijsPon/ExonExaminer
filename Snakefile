@@ -96,6 +96,7 @@ rule cds_2_bed:
     shell:
         "python3 scripts/parse_cds_2_bed.py {input} {output}"
 
+
 rule cds_get_fasta:
     input:
         bed="output/codon_usage/{species}_cds.bed",
@@ -114,3 +115,21 @@ rule merge_cds_sequences:
     rule:
         "python3 scripts/merge_cds_sequences.py {input} {output}"
 
+
+rule cds_2_bed_phase_aware:
+    input:
+        "input/ENSEMBL/{species}.gff3"
+    output:
+        "output/codon_usage/{species}_cds_phase_aware.bed"
+    shell:
+        "python3 scripts/parse_cds_2_bed.py -p {input} {output}"
+
+
+rule cds_get_fasta_phase_aware:
+    input:
+        bed="output/codon_usage/{species}_cds_phase_aware.bed",
+        fa="input/ENSEMBL/fasta/{species}.fa"
+    output:
+        "output/codon_usage/{species}_cds_seq_phase_aware.bed"
+    shell:
+        "bedtools getfasta -s -bedOut -fi {input.fa} -bed {input.bed} -fo {output}"
