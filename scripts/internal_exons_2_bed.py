@@ -45,7 +45,7 @@ def main():
     print(df.columns)
     df = df.loc[df["type"] == "exon"]
     # Only take along internal exons
-    df = df.loc[(df["three_prime"] is False) and (df["five_prime"] is False)]
+    df = df.loc[(df["three_prime"] is False) & (df["five_prime"] is False)]
     # BedTools sees the stop index as non-inclusive, but gff3 sees it as inclusive
     df["start"] = df["start"].apply(pd.to_numeric)
     df["start"] -= 1
