@@ -6,7 +6,7 @@ rule all:
         expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_TEMP),
         "output/exon_gc/full_gc_analysis.txt",
-        "output/codon_usage/human_cds_seq_phase_aware.fa"
+        "output/codon_usage/human_out/hbar_graph_size_<50.png"
 
 
 rule exon_incorporation_pickle:
@@ -106,3 +106,15 @@ rule cds_get_fasta_phase_aware:
         "output/codon_usage/{species}_cds_seq_phase_aware.fa"
     shell:
         "bedtools getfasta -s -fi {input.fa} -bed {input.bed} > {output}"
+
+
+rule analyze_codon_usage:
+    input:
+        fa="output/codon_usage/{species}_cds_seq_phase_aware.fa",
+        pickle="output/parsed_gff/{species}.pickle"
+    output:
+        "output/codon_usage/{species}_out/hbar_graph_size_<50.png"
+    params:
+        out_dir="output/codon_usage/{species}_out/"
+    shell:
+        "python3 scripts/codon_usage.py {input.fa} {input.pickle} {params.out_dir}"
