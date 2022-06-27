@@ -105,7 +105,7 @@ rule cds_get_fasta_phase_aware:
     output:
         "output/codon_usage/{species}_cds_seq_phase_aware.fa"
     shell:
-        "bedtools getfasta -s -fi {input.fa} -bed {input.bed} > {output}"
+        "bedtools getfasta -s -name -fi {input.fa} -bed {input.bed} > {output}"
 
 
 rule analyze_codon_usage:
