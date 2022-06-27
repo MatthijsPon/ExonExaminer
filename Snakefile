@@ -5,7 +5,8 @@ rule all:
     input:
         expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_TEMP),
-        "output/exon_gc/full_gc_analysis.txt"
+        "output/exon_gc/full_gc_analysis.txt",
+        "output/codon_usage/human_cds_seq_phase_aware.bed"
 
 
 rule exon_incorporation_pickle:
@@ -86,34 +87,6 @@ rule gc_exons_analysis:
         "output/exon_gc/full_gc_analysis.txt"
     shell:
         "python3 scripts/gc_analysis.py {output} {input.gc} {input.usage}"
-
-
-rule cds_2_bed:
-    input:
-        "input/ENSEMBL/{species}.gff3"
-    output:
-        "output/codon_usage/{species}_cds.bed"
-    shell:
-        "python3 scripts/parse_cds_2_bed.py {input} {output}"
-
-
-rule cds_get_fasta:
-    input:
-        bed="output/codon_usage/{species}_cds.bed",
-        fa="input/ENSEMBL/fasta/{species}.fa"
-    output:
-        "output/codon_usage/{species}_cds_seq.bed"
-    shell:
-        "bedtools getfasta -s -bedOut -fi {input.fa} -bed {input.bed} -fo {output}"
-
-
-rule merge_cds_sequences:
-    input:
-        "output/codon_usage/{species}_cds_seq.bed"
-    output:
-        "output/codon_usage/{species}_cds.fa"
-    rule:
-        "python3 scripts/merge_cds_sequences.py {input} {output}"
 
 
 rule cds_2_bed_phase_aware:
