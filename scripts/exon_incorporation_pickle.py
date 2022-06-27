@@ -8,7 +8,7 @@ import statistics
 
 import pandas as pd
 
-from scripts.helpers import yield_single_gene, get_internal_exons, determine_target_exon
+from helpers import yield_single_gene, get_internal_exons, determine_target_exon
 
 
 def parse_arguments():
