@@ -86,7 +86,7 @@ rule gc_exons_analysis:
     output:
         "output/exon_gc/full_gc_analysis.txt"
     shell:
-        "python3 scripts/full_gc_analysis.py {output} {input.gc} {input.usage}"
+        "python3 scripts/full_gc_analysis.py {output} {input.gc} {input.usage} && touch {output}"
 
 
 rule cds_2_bed_phase_aware:
