@@ -6,7 +6,7 @@ rule all:
         expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_TEMP),
         "output/exon_gc/full_gc_analysis.txt",
-        "output/codon_usage/human_cds_seq_phase_aware.bed"
+        "output/codon_usage/human_cds_seq_phase_aware.fa"
 
 
 rule exon_incorporation_pickle:
@@ -103,6 +103,6 @@ rule cds_get_fasta_phase_aware:
         bed="output/codon_usage/{species}_cds_phase_aware.bed",
         fa="input/ENSEMBL/fasta/{species}.fa"
     output:
-        "output/codon_usage/{species}_cds_seq_phase_aware.bed"
+        "output/codon_usage/{species}_cds_seq_phase_aware.fa"
     shell:
-        "bedtools getfasta -s -bedOut -fi {input.fa} -bed {input.bed} > {output}"
+        "bedtools getfasta -s -fi {input.fa} -bed {input.bed} > {output}"
