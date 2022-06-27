@@ -86,7 +86,7 @@ rule gc_exons_analysis:
     output:
         "output/exon_gc/full_gc_analysis.txt"
     shell:
-        "python3 scripts/gc_analysis.py {output} {input.gc} {input.usage}"
+        "python3 scripts/full_gc_analysis.py {output} {input.gc} {input.usage}"
 
 
 rule cds_2_bed_phase_aware:
@@ -105,4 +105,4 @@ rule cds_get_fasta_phase_aware:
     output:
         "output/codon_usage/{species}_cds_seq_phase_aware.bed"
     shell:
-        "bedtools getfasta -s -bedOut -fi {input.fa} -bed {input.bed} -fo {output}"
+        "bedtools getfasta -s -bedOut -fi {input.fa} -bed {input.bed} > {output}"
