@@ -21,7 +21,7 @@ def parse_arguments():
     parser.add_argument("out_dir", type=str,
                         help="output directory (incl. trailing \\")
     args = parser.parse_args()
-    if not args.out_dir.endswith("/") or not args.out_dir.endswith("\\"):
+    if not args.out_dir.endswith("/") and not args.out_dir.endswith("\\"):
         raise ValueError("Please end the out_dir with a trailing \\ or /.")
     return args.fasta, args.pickle, args.out_dir
 
