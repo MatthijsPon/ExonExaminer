@@ -1,5 +1,6 @@
 SPECIES = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee", "c.elegans", "zebrafish", "chicken", "arabidopsis_thaliana"]
 SPECIES_TEMP = ["mouse", "human"]
+CDS_SIZES = ["(0,50)", "(50,300)", "(300,10000)"]
 
 rule all:
     input:
@@ -108,13 +109,37 @@ rule cds_get_fasta_phase_aware:
         "bedtools getfasta -s -name -fi {input.fa} -bed {input.bed} > {output}"
 
 
-rule analyze_codon_usage:
+rule cds_divide_into_groups:
     input:
         fa="output/codon_usage/{species}_cds_seq_phase_aware.fa",
         pickle="output/parsed_gff/{species}.pickle"
     output:
-        "output/codon_usage/{species}_out/hbar_graph_size_<50.png"
+        ["output/codon_usage/{species}/group_" + cds + ".fa" for cds in CDS_SIZES]
     params:
-        out_dir="output/codon_usage/{species}_out/"
+        cds=CDS_SIZES,
+        outdir="output/codon_usage/{species}/"
     shell:
-        "python3 scripts/codon_usage.py {input.fa} {input.pickle} {params.out_dir}"
+        "python3 scripts/cds_split_fa_2_size_groups.py {input.fa} {input.pickle} --out_dir {params.outdir} {params.cds}"
+
+rule cusp:
+    input:
+        "output/codon_usage/{species}/group_{cds}.fa"
+    output:
+        "output/codon_usage/{species}/codon_usage_group_{cds}.fa"
+    params:
+        cusp_install="/exports/humgen/mnpon/EMBOSS/bin/cusp"
+    shell:
+        "{params.cusp_install} {input} {output}"
+
+rule analyze_codon_usage:
+    input:
+        ["output/codon_usage/{species}/codon_usage_group_" + cds + ".fa" for cds in CDS_SIZES]
+    output:
+        ["output/codon_usage/{species}/hbar_graph_size_" + cds + ".png" for cds in CDS_SIZES]
+    params:
+        out_dir="output/codon_usage/{species}/"
+    shell:
+        "python3 scripts/codon_usage.py --out_dir {params.out_dir} {input}"
+
+
+rule
