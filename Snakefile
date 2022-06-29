@@ -123,11 +123,11 @@ rule cusp:
     input:
         "output/codon_usage/{species}/group_{cds}.fa"
     output:
-        "output/codon_usage/{species}/codon_usage_group_{cds}.fa"
+        "output/codon_usage/{species}/codon_usage_group_{cds}.cusp"
     params:
         cusp_install="/exports/humgen/mnpon/EMBOSS/bin/cusp"
     shell:
-        "{params.cusp_install} {input} {output}"
+        "{params.cusp_install} -sequence {input} -outfile {output}"
 
 rule analyze_codon_usage:
     input:
