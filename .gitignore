@@ -8,5 +8,8 @@ images/
 out/
 data
 logs/
+input
+output
+.snakemake/
 __pycache__/
 
