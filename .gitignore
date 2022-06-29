@@ -1,15 +1,14 @@
-# Ignoring pycharm stuff
+# Computer side ignore
 /.idea/
 /venv/
-
-# Actual gitignore
 data/
 images/
 out/
 data
+__pycache__/
+
+# Server side ignore
+.snakemake/
 logs/
 input
 output
-.snakemake/
-__pycache__/
-
