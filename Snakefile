@@ -7,7 +7,7 @@ rule all:
         expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_TEMP),
         "output/exon_gc/full_gc_analysis.txt",
-        "output/codon_usage/human_out/hbar_graph_size_<50.png"
+        expand("output/codon_usage/human/hbar_graph_size_{cds}.png", cds=CDS_SIZES)
 
 
 rule exon_incorporation_pickle:
