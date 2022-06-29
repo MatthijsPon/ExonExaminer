@@ -1,13 +1,14 @@
 SPECIES = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee", "c.elegans", "zebrafish", "chicken", "arabidopsis_thaliana"]
 SPECIES_TEMP = ["mouse", "human"]
-CDS_SIZES = ["(0,50)", "(50,300)", "(300,10000)"]
+CDS_SIZES = ["0,50", "50,300", "300,10000"]
 
 rule all:
     input:
         expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_TEMP),
         "output/exon_gc/full_gc_analysis.txt",
-        expand("output/codon_usage/human/hbar_graph_size_{cds}.png", cds=CDS_SIZES)
+        expand("output/codon_usage/human/codon_usage_group_{cds}.fa", cds=CDS_SIZES),
+        # expand("output/codon_usage/human/hbar_graph_size_{cds}.png", cds=CDS_SIZES)
 
 
 rule exon_incorporation_pickle:
@@ -115,10 +116,8 @@ rule cds_divide_into_groups:
         pickle="output/parsed_gff/{species}.pickle"
     output:
         ["output/codon_usage/{species}/group_" + cds + ".fa" for cds in CDS_SIZES]
-    params:
-        outdir="output/codon_usage/{species}/"
     shell:
-        "python3 scripts/cds_split_fa_2_size_groups.py {input.fa} {input.pickle} --out_dir {params.outdir} {output}"
+        "python3 scripts/cds_split_fa_2_size_groups.py {input.fa} {input.pickle} {output}"
 
 rule cusp:
     input:
