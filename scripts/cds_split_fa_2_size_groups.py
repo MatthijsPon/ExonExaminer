@@ -77,11 +77,7 @@ def main():
     out = {fname: [] for fname, ranges in out_files}
 
     with open(fa_in) as file:
-        count = 0
         for name, seq in parse_fasta(file, df):
-            if count > 20:
-                break
-            count += 1
             # Determine size of exon
             size = int(df.loc[df["id"] == name, "size"])
             # Add to file of interest
