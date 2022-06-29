@@ -5,8 +5,6 @@ Description:
 """
 
 import argparse as arg
-from contextlib import ExitStack
-
 import pandas as pd
 
 
