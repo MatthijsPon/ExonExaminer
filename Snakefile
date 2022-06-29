@@ -116,10 +116,9 @@ rule cds_divide_into_groups:
     output:
         ["output/codon_usage/{species}/group_" + cds + ".fa" for cds in CDS_SIZES]
     params:
-        cds=CDS_SIZES,
         outdir="output/codon_usage/{species}/"
     shell:
-        "python3 scripts/cds_split_fa_2_size_groups.py {input.fa} {input.pickle} --out_dir {params.outdir} {params.cds}"
+        "python3 scripts/cds_split_fa_2_size_groups.py {input.fa} {input.pickle} --out_dir {params.outdir} {output}"
 
 rule cusp:
     input:
