@@ -141,5 +141,3 @@ rule analyze_codon_usage:
     shell:
         "python3 scripts/codon_usage.py --out_dir {params.out_dir} {input}"
 
-
-rule
