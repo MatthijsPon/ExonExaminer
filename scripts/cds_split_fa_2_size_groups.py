@@ -19,7 +19,7 @@ def parse_arguments():
     parser.add_argument("pickle", type=str,
                         help="pandas pickle file, parsed gff3")
     parser.add_argument("output_files", type=str, nargs="+",
-                        help="output filenames (incl. group tuple, eg: (0,100) )")
+                        help="output filenames (incl. group numbers, eg: 0,100 )")
     args = parser.parse_args()
 
     # Parse filenames into (filename, (start, stop))
@@ -48,16 +48,7 @@ def parse_fasta(file, df):
         elif line.startswith(">"):
             if fa_id and seq:
                 yield fa_id, "".join(seq)
-            line = line[1:].split(":")
-            start, stop = line[3][:-3].split("-")
-            start = str(int(start) + 1)
-            try:
-                fa_id = df.loc[(df["chromosome"] == line[2]) & (df["strand"] == line[3][-2]) &
-                               (df["start"] <= start) & (df["stop"] >= stop), "id"].iloc[0]
-            except IndexError:
-                fa_id = ""
-            if type(fa_id) != str:
-                raise ValueError("Multiple exons map to the same location.")
+            fa_id = line[1:]
             seq = []
         else:
             seq.append(line)
