@@ -1,11 +1,11 @@
 SPECIES = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee", "c.elegans", "zebrafish", "chicken", "arabidopsis_thaliana"]
-SPECIES_TEMP = ["mouse", "human"]
+SPECIES_SMALL = ["mouse", "human"]
 CDS_SIZES = ["0,50", "50,300", "300,10000"]
 
 rule all:
     input:
         expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
-        expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_TEMP),
+        expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_SMALL),
         "output/exon_gc/full_gc_analysis.txt",
         expand("output/codon_usage/human/codon_usage_group_{cds}.fa", cds=CDS_SIZES),
         # expand("output/codon_usage/human/hbar_graph_size_{cds}.png", cds=CDS_SIZES)
@@ -80,11 +80,10 @@ rule calc_gc_exons:
     shell:
         "bedtools nuc -fi {input.fa} -bed {input.bed} > {output} && rm {input.fa}"
 
-
 rule gc_exons_analysis:
     input:
-        gc=expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_TEMP),
-        usage=expand("output/exon_incorporation/{species}_exon_usage.pickle", species=SPECIES_TEMP)
+        gc=expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_SMALL),
+        usage=expand("output/exon_incorporation/{species}_exon_usage.pickle", species=SPECIES_SMALL)
     output:
         "output/exon_gc/full_gc_analysis.txt"
     shell:
@@ -99,7 +98,6 @@ rule cds_2_bed_phase_aware:
     shell:
         "python3 scripts/parse_cds_2_bed.py -p {input} {output}"
 
-
 rule cds_get_fasta_phase_aware:
     input:
         bed="output/codon_usage/{species}_cds_phase_aware.bed",
@@ -109,10 +107,18 @@ rule cds_get_fasta_phase_aware:
     shell:
         "bedtools getfasta -s -name -fi {input.fa} -bed {input.bed} > {output}"
 
+rule rename_cds_fasta:
+    input:
+        fa="output/codon_usage/{species}_cds_seq_phase_aware.fa",
+        pickle=""
+    output:
+        "output/codon_usage/{species}_cds_seq_renamed.fa"
+    shell:
+        "python3 scripts/rename_cds_2_exon.py {input.fa} {input.pickle} {output}"
 
 rule cds_divide_into_groups:
     input:
-        fa="output/codon_usage/{species}_cds_seq_phase_aware.fa",
+        fa="output/codon_usage/{species}_cds_seq_renamed.fa",
         pickle="output/parsed_gff/{species}.pickle"
     output:
         ["output/codon_usage/{species}/group_" + cds + ".fa" for cds in CDS_SIZES]
