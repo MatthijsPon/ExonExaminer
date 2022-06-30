@@ -110,7 +110,7 @@ rule cds_get_fasta_phase_aware:
 rule rename_cds_fasta:
     input:
         fa="output/codon_usage/{species}_cds_seq_phase_aware.fa",
-        pickle=""
+        pickle="output/parsed_gff/{species}.pickle"
     output:
         "output/codon_usage/{species}_cds_seq_renamed.fa"
     shell:
