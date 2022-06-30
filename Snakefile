@@ -145,3 +145,14 @@ rule analyze_codon_usage:
     shell:
         "python3 scripts/codon_usage.py --out_dir {params.out_dir} {input}"
 
+
+rule transeq:
+    input:
+        "output/codon_usage/{species}_cds_seq_renamed.fa"
+    output:
+        "output/exon_orthologs/{species}_translated_cds.prot"
+    params:
+        transeq_install="/exports/humgen/mnpon/EMBOSS/bin/transeq"
+    shell:
+        "{params.transeq_install} -sequence {input} -outseq {output}"
+
