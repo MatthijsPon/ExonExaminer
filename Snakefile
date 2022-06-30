@@ -98,6 +98,9 @@ rule cds_2_bed_phase_aware:
     shell:
         "python3 scripts/parse_cds_2_bed.py -p {input} {output}"
 
+#!!!!!!!!!!!!!!!!!!!!
+#THE OUTPUT FILE OF THE FOLLOWING RULE  HAS BEEN SHORTENED ON THE SERVER, CHANGE BACK WHEN DONE
+#!!!!!!!!!!!!!!!!!!!!
 rule cds_get_fasta_phase_aware:
     input:
         bed="output/codon_usage/{species}_cds_phase_aware.bed",
