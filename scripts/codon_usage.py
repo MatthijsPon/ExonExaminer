@@ -58,9 +58,8 @@ def determine_codon_usage(file):
     return codons
 
 
-def codon_usage_df(sequences):
+def codon_usage_df(codon_usage):
     """"""
-    codon_usage = determine_codon_usage(sequences)
     total = sum(codon_usage.values())
 
     df = pd.DataFrame(codon_aa_table())
