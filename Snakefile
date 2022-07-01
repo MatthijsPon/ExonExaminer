@@ -2,13 +2,14 @@ SPECIES = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee", "c.elegans", 
 SPECIES_SMALL = ["mouse", "human"]
 CDS_SIZES = ["0,50", "50,300", "300,10000"]
 
+# Rule to gather all output files from rules
 rule all:
     input:
         expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_SMALL),
         "output/exon_gc/full_gc_analysis.txt",
-        expand("output/codon_usage/human/codon_usage_group_{cds}.cusp", cds=CDS_SIZES),
-        # expand("output/codon_usage/human/hbar_graph_size_{cds}.png", cds=CDS_SIZES)
+        # expand("output/codon_usage/human/codon_usage_group_{cds}.cusp", cds=CDS_SIZES),
+        expand("output/codon_usage/human/hbar_graph_size_{cds}.png", cds=CDS_SIZES),
 
 
 rule exon_incorporation_pickle:
@@ -98,9 +99,6 @@ rule cds_2_bed_phase_aware:
     shell:
         "python3 scripts/parse_cds_2_bed.py -p {input} {output}"
 
-#!!!!!!!!!!!!!!!!!!!!
-#THE OUTPUT FILE OF THE FOLLOWING RULE  HAS BEEN SHORTENED ON THE SERVER, CHANGE BACK WHEN DONE
-#!!!!!!!!!!!!!!!!!!!!
 rule cds_get_fasta_phase_aware:
     input:
         bed="output/codon_usage/{species}_cds_phase_aware.bed",
@@ -128,26 +126,38 @@ rule cds_divide_into_groups:
     shell:
         "python3 scripts/cds_split_fa_2_size_groups.py {input.fa} {input.pickle} {output}"
 
-rule cusp:
-    input:
-        "output/codon_usage/{species}/group_{cds}.fa"
-    output:
-        "output/codon_usage/{species}/codon_usage_group_{cds}.cusp"
-    params:
-        cusp_install="/exports/humgen/mnpon/EMBOSS/bin/cusp"
-    shell:
-        "{params.cusp_install} -sequence {input} -outfile {output}"
+
+#! The files are too big for cusp.
+# rule cusp:
+#     input:
+#         "output/codon_usage/{species}/group_{cds}.fa"
+#     output:
+#         "output/codon_usage/{species}/codon_usage_group_{cds}.cusp"
+#     params:
+#         cusp_install="/exports/humgen/mnpon/EMBOSS/bin/cusp"
+#     shell:
+#         "{params.cusp_install} -sequence {input} -outfile {output}"
 
 rule analyze_codon_usage:
     input:
-        ["output/codon_usage/{species}/codon_usage_group_" + cds + ".fa" for cds in CDS_SIZES]
+        "output/codon_usage/{species}/group_{cds}.fa"
     output:
-        ["output/codon_usage/{species}/hbar_graph_size_" + cds + ".png" for cds in CDS_SIZES]
+        "output/codon_usage/{species}/hbar_graph_size_{cds}.png"
     params:
-        out_dir="output/codon_usage/{species}/"
+        out_dir="output/codon_usage/{species}/",
+        cds="{cds}"
     shell:
-        "python3 scripts/codon_usage.py --out_dir {params.out_dir} {input}"
+        "python3 scripts/codon_usage.py {input} {params.out_dir} {params.cds}"
 
+
+rule select_prot_of_interest:
+    input:
+        genes_of_interest="output/codon_usage/{species}_subset.csv",
+        renamed_fa="output/codon_usage/{species}_cds_seq_renamed.fa",
+    output:
+        "output/codon_usage/{species}_cds_seq_renamed_subset.fa"
+    shell:
+        "python3 scripts/select_yfg_from_fasta.py {input.renamed_fa} {input.genes_of_interest} {output}"
 
 rule transeq:
     input:
@@ -159,3 +169,14 @@ rule transeq:
     shell:
         "{params.transeq_install} -sequence {input} -outseq {output}"
 
+
+
+rule align_exons_2_prot:
+    input:
+        exon_prot="output/exon_orthologs/{species1}_translated_cds.prot",
+        whole_prot="input/ENSEMBLE/biomart/{species2}_all_proteins.prot",
+        orthologs="input/ENSEMBLE/biomart/gene_orthologs_{species1}_{species2}"
+    output:
+        "output/exon_orthologs/exon_orthologs_{species1}_to_{species2}.csv"
+    shell:
+        "python3 "
