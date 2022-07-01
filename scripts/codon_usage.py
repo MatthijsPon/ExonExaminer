@@ -44,12 +44,12 @@ def determine_codon_usage(file):
     codons = {}
 
     for fa_id, fasta in yield_fasta_record(file):
-        len_seq = len(fasta["seq"])
+        len_seq = len(fasta)
         for i in range(0, len_seq, 3):
             if i + 3 > len_seq:
                 # There is no full codon left in the sequence
                 break
-            codon = fasta["seq"][i:i+3]
+            codon = fasta[i:i+3]
             if codons.get(codon) is None:
                 codons[codon] = 1
             else:
@@ -86,7 +86,6 @@ def hbar_codon_usage(df, filename):
 def main():
     """"""
     fasta, out_dir, group = parse_arguments()
-
 
     with open(fasta) as file:
         cu_dict = determine_codon_usage(file)
