@@ -9,7 +9,7 @@ rule all:
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_SMALL),
         "output/exon_gc/full_gc_analysis.txt",
         # expand("output/codon_usage/human/codon_usage_group_{cds}.cusp", cds=CDS_SIZES),
-        expand("output/codon_usage/human/hbar_graph_size_{cds}.png", cds=CDS_SIZES),
+        expand("output/codon_usage/human/hbar_graph_{cds}.png", cds=CDS_SIZES),
 
 
 rule exon_incorporation_pickle:
