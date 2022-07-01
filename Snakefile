@@ -142,7 +142,7 @@ rule analyze_codon_usage:
     input:
         "output/codon_usage/{species}/group_{cds}.fa"
     output:
-        "output/codon_usage/{species}/hbar_graph_size_{cds}.png"
+        "output/codon_usage/{species}/hbar_graph_{cds}.png"
     params:
         out_dir="output/codon_usage/{species}/",
         cds="{cds}"
