@@ -42,7 +42,6 @@ def main():
     pickle, out_file = parse_arguments()
 
     df = pd.read_pickle(pickle)
-    print(df.columns)
     df = df.loc[df["type"] == "exon"]
     # Only take along internal exons
     df = df.loc[(df["three_prime"] == False) & (df["five_prime"] == False)]
