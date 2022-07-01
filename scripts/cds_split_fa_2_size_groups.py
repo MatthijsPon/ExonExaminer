@@ -34,7 +34,7 @@ def parse_arguments():
     return args.fasta, args.pickle, files
 
 
-def parse_fasta(file, df):
+def yield_fasta_record(file):
     """"""
     fa_id = ""
     seq = []
@@ -61,14 +61,14 @@ def main():
     """Main function."""
     fa_in, pickle, out_files = parse_arguments()
     df = pd.read_pickle(pickle)
-    # Only hand internal exons to parse_fasta
+    # Only hand internal exons to yield_fasta_record
     df = df.loc[df["type"] == "exon"]
     df = df.loc[(df["three_prime"] == False) & (df["five_prime"] == False)]
 
     out = {fname: [] for fname, ranges in out_files}
 
     with open(fa_in) as file:
-        for name, seq in parse_fasta(file, df):
+        for name, seq in yield_fasta_record(file):
             # Determine size of exon
             size = int(df.loc[df["id"] == name, "size"])
             # Add to file of interest
