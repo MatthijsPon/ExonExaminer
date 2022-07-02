@@ -74,6 +74,7 @@ def yield_single_gene(file_object):
                 "strand": [],
                 "parent": [],
                 "size": [],
+                "cds": []
             }
             gene_id = determine_gff(line[8], "ID=gene:")
             transcript = []
@@ -87,6 +88,7 @@ def yield_single_gene(file_object):
             gene_dict["strand"].append(line[6])
             gene_dict["parent"].append(None)
             gene_dict["size"].append(None)
+            gene_dict["cds"].append(False)
         elif line[2] == "mRNA":
             # only add if there is a parent gene and the mRNA is protein_coding
             if determine_gff(line[8], "Parent=gene:") == gene_id and \
@@ -102,6 +104,7 @@ def yield_single_gene(file_object):
                 gene_dict["strand"].append(line[6])
                 gene_dict["parent"].append(gene_id)
                 gene_dict["size"].append(None)
+                gene_dict["cds"].append(False)
         elif line[2] == "exon":
             if determine_gff(line[8], "Parent=transcript:") in transcript:
                 exon_id = determine_gff(line[8], "Name=")
@@ -114,6 +117,17 @@ def yield_single_gene(file_object):
                 gene_dict["strand"].append(line[6])
                 gene_dict["parent"].append(determine_gff(line[8], "Parent=transcript:"))
                 gene_dict["size"].append((int(line[4]) - int(line[3]) + 1))  # The size is incl. the last nucleotide
+                gene_dict["cds"].append(False)
+
+        # Check if exon has a coding sequence in it
+        elif line[2] == "CDS":
+            if determine_gff(line[8], "Parent=transcript:") in transcript:
+                if gene_dict["type"][-1] == "exon":
+                    start = int(line[3])
+                    stop = int(line[4])
+                    # Check if the cds start is at/after exon start and check if cds stop is at/before exon stop
+                    if start >= int(gene_dict["start"][-1]) and stop <= int(gene_dict["stop"][-1]):
+                        gene_dict["cds"][-1] = True
 
     if gene_id and transcript and exon:
         yield pd.DataFrame.from_dict(gene_dict)
