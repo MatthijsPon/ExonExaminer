@@ -7,6 +7,7 @@ import argparse as arg
 import pandas as pd
 from matplotlib import pyplot as plt
 from cds_split_fa_2_size_groups import yield_fasta_record
+import seaborn as sns
 
 
 def parse_arguments():
@@ -32,9 +33,33 @@ def codon_aa_table():
     bases = "TCAG"
     codons = [a + b + c for a in bases for b in bases for c in bases]
     amino_acids = "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG"
+    aa_type = {
+        "*": "Stop",
+        "R": "Positively charged",
+        "H": "Positively charged",
+        "K": "Positively charged",
+        "D": "Negatively charged",
+        "E": "Negatively charged",
+        "S": "Polar uncharged",
+        "T": "Polar uncharged",
+        "N": "Polar uncharged",
+        "Q": "Polar uncharged",
+        "P": "Polar uncharged",
+        "C": "Polar uncharged",
+        "G": "Non-polar, aliphatic",
+        "A": "Non-polar, aliphatic",
+        "V": "Non-polar, aliphatic",
+        "I": "Non-polar, aliphatic",
+        "L": "Non-polar, aliphatic",
+        "M": "Non-polar, aliphatic",
+        "F": "Aromatic",
+        "Y": "Aromatic",
+        "W": "Aromatic"
+    }
     codon_table = {
         "codon": codons,
-        "amino_acid": [aa for aa in amino_acids]
+        "amino_acid": [aa for aa in amino_acids],
+        "aa_type": [aa_type[aa] for aa in amino_acids]
     }
     return codon_table
 
@@ -76,8 +101,14 @@ def codon_usage_df(codon_usage):
 
 def hbar_codon_usage(df, filename):
     """"""
+    aa_order = ["R", "H", "K", "D", "E", "S", "T", "N", "Q", "C", "P", "G",
+                "A", "V", "I", "L", "M", "F", "Y", "W", "*"]
+    df.amino_acid = df.amino_acid.astype("category")
+    df.amino_acid = df.amino_acid.cat.set_categories(aa_order)
+    df = df.sort_values(["amino_acid"])
     plt.rcParams.update({"font.size": 8, "figure.figsize": (19.2, 10.8)})
-    df.plot.barh(x="codon", y="fraction")
+    ax = sns.barplot(x="fraction", y="codon", data=df, hue="aa_type", dodge=False)
+    plt.show()
     plt.savefig(filename)
     plt.close()
 
