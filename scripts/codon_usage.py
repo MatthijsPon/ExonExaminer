@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Author: Matthijs Pon
-Description:
+Description: Analyse the codon usage of a fasta file
 """
 import argparse as arg
 import pandas as pd
@@ -29,7 +29,10 @@ def parse_arguments():
 
 
 def codon_aa_table():
-    """"""
+    """Create an amino acid dataframe, containing codons, amino acids and aa type.
+
+    :return: pandas dataframe object, AA dataframe
+    """
     bases = "TCAG"
     codons = [a + b + c for a in bases for b in bases for c in bases]
     amino_acids = "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG"
@@ -61,11 +64,15 @@ def codon_aa_table():
         "amino_acid": [aa for aa in amino_acids],
         "aa_type": [aa_type[aa] for aa in amino_acids]
     }
-    return codon_table
+    return pd.DataFrame(codon_table)
 
 
 def determine_codon_usage(file):
-    """"""
+    """Determine the usage of codons from all sequences in a fasta file
+
+    :param file: iterable, open fasta file object
+    :return: dict, str: int, codon: count
+    """
     codons = {}
 
     for fa_id, fasta in yield_fasta_record(file):
@@ -84,10 +91,14 @@ def determine_codon_usage(file):
 
 
 def codon_usage_df(codon_usage):
-    """"""
+    """Create a codon usage dataframe, combining codon usage and codon_aa_table()
+
+    :param codon_usage: dict, codon usage counts
+    :return: pandas dataframe object, codon usage dataframe including fractions
+    """
     total = sum(codon_usage.values())
 
-    df = pd.DataFrame(codon_aa_table())
+    df = codon_aa_table()
     df2 = pd.DataFrame(codon_usage, index=["count"])
     df2 = df2.transpose(copy=False)
     df2 = df2.reset_index()
@@ -100,7 +111,12 @@ def codon_usage_df(codon_usage):
 
 
 def hbar_codon_usage(df, filename):
-    """"""
+    """Create a horizontal codon usage bar graph, coloured on AA type
+
+    :param df: pandas dataframe object, containing data to graph
+    :param filename: str, output filename
+    :return: None, figures are created.
+    """
     aa_order = ["R", "H", "K", "D", "E", "S", "T", "N", "Q", "C", "P", "G",
                 "A", "V", "I", "L", "M", "F", "Y", "W", "*"]
     df.amino_acid = df.amino_acid.astype("category")
@@ -111,10 +127,11 @@ def hbar_codon_usage(df, filename):
     plt.show()
     plt.savefig(filename)
     plt.close()
+    return None
 
 
 def main():
-    """"""
+    """Main function."""
     fasta, out_dir, group = parse_arguments()
 
     with open(fasta) as file:
