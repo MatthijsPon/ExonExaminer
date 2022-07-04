@@ -69,6 +69,10 @@ def main():
 
     with open(fa_in) as file:
         for name, seq in yield_fasta_record(file):
+
+            # Skip sequences which are not in the df
+            if df.loc[df["id"] == name].empty:
+                continue
             # Determine size of exon
             size = int(df.loc[df["id"] == name, "size"])
             # Add to file of interest
