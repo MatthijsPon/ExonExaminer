@@ -6,7 +6,7 @@ Description: Parse a gff3 file into a usable dataframe.
 import numpy as np
 import pandas as pd
 
-from helpers import yield_single_gene
+from helpers import yield_single_gene, determine_primes
 import argparse as arg
 
 
@@ -22,60 +22,6 @@ def parse_arguments():
                         help="output filename")
     args = parser.parse_args()
     return args.gff3_file, args.out_file
-
-
-def determine_primes(gene_df):
-    """Create a list of all internal exons in the gene dataframe
-
-    :param gene_df: pandas dataframe, gene dataframe
-    :return: set of str, exon IDs of internal exons (otherwise None)
-
-    Select exons per transcript and determine which are internal. An internal exon has a non-prime position in at
-    least one transcript. Returns all unique exon IDs.
-    """
-    three_prime = set()
-    five_prime = set()
-    only_exons = gene_df[gene_df["type"] == "exon"]
-
-    lowest_list = []
-    highest_list = []
-
-    for idx, group in only_exons.groupby("parent"):
-        nomore_low = False
-        nomore_high = False
-        strand = group["strand"].iloc[0]
-
-        # Determine make all lows prime until one has a cds
-        group_ids = list(group["id"])
-        while not nomore_low and len(group_ids) > 0:
-            interest = group.loc[group["id"].isin(group_ids)]
-            lowest = interest.loc[interest["start"] == interest["start"].min(), "id"].iloc[0]
-            lowest_list.append(lowest)
-            if interest.loc[interest["id"] == lowest, "cds"].iloc[0] == True:
-                nomore_low = True
-            group_ids.remove(lowest)
-
-        # Determine make all highs prime until one has a cds
-        group_ids = list(group["id"])
-        while not nomore_high and len(group_ids) > 0:
-            interest = group.loc[group["id"].isin(group_ids)]
-            highest = interest.loc[interest["stop"] == interest["stop"].max(), "id"].iloc[0]
-            highest_list.append(highest)
-
-            if interest.loc[interest["id"] == highest, "cds"].iloc[0] == True:
-                nomore_high = True
-            group_ids.remove(highest)
-
-        if strand == "+":
-            five_prime.update(lowest_list)
-            three_prime.update(highest_list)
-        else:
-            five_prime.update(highest_list)
-            three_prime.update(lowest_list)
-    # Add boolean for five and three prime to dataframe
-    gene_df["three_prime"] = np.where(gene_df["id"].isin(three_prime), True, False)
-    gene_df["five_prime"] = np.where(gene_df["id"].isin(five_prime), True, False)
-    return gene_df
 
 
 def merge_exons(gff_df):
@@ -106,7 +52,7 @@ def parse_gff_file(file_object):
 
 
 def main():
-    """Main function"""
+    """Main function."""
     gff, out_file = parse_arguments()
     with open(gff) as file:
         gff = parse_gff_file(file)

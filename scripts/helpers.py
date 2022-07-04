@@ -3,6 +3,7 @@
 Author: Matthijs Pon
 Description:
 """
+import numpy as np
 import pandas as pd
 
 
@@ -143,16 +144,12 @@ def get_internal_exons(gene_df, remove=None):
     Select exons per transcript and determine which are internal. An internal exon has a non-prime position in at
     least one transcript. Returns all unique exon IDs.
     """
-    non_prime = set()
-    only_exons = gene_df[gene_df["type"] == "exon"]
+    # Add prime values to df
+    df = determine_primes(gene_df)
+    # Only internal exons
+    df = df[df["type"] == "exon"]
+    non_prime = set(df.loc[(df["three_prime"] == False) & (df["five_prime"] == False), "id"])
 
-    for idx, group in only_exons.groupby("parent"):
-        exons_transcript = list(group["id"])
-        exons_transcript.pop(0)  # Remove the first exon
-        if len(exons_transcript) >= 1:  # Cannot pop twice if there is only one exon
-            exons_transcript.pop(-1)  # Remove the last exon
-        for exon in exons_transcript:
-            non_prime.add(exon)
     # Only return a value when there are internal exons
     if len(non_prime) >= 1:
         if remove:
@@ -192,3 +189,57 @@ def determine_target_exon(gene_df, target):
         return None
     else:
         raise ValueError("Incorrect target given in determine_target_exon().")
+
+
+def determine_primes(gene_df):
+    """Create a list of all internal exons in the gene dataframe
+
+    :param gene_df: pandas dataframe, gene dataframe
+    :return: set of str, exon IDs of internal exons (otherwise None)
+
+    Select exons per transcript and determine which are internal. An internal exon has a non-prime position in at
+    least one transcript. Returns all unique exon IDs.
+    """
+    three_prime = set()
+    five_prime = set()
+    only_exons = gene_df[gene_df["type"] == "exon"]
+
+    lowest_list = []
+    highest_list = []
+
+    for idx, group in only_exons.groupby("parent"):
+        nomore_low = False
+        nomore_high = False
+        strand = group["strand"].iloc[0]
+
+        # Make all lows prime until one has a cds
+        group_ids = list(group["id"])
+        while not nomore_low and len(group_ids) > 0:
+            interest = group.loc[group["id"].isin(group_ids)]
+            lowest = interest.loc[interest["start"] == interest["start"].min(), "id"].iloc[0]
+            lowest_list.append(lowest)
+            if interest.loc[interest["id"] == lowest, "cds"].iloc[0] == True:
+                nomore_low = True
+            group_ids.remove(lowest)
+
+        # Make all highs prime until one has a cds
+        group_ids = list(group["id"])
+        while not nomore_high and len(group_ids) > 0:
+            interest = group.loc[group["id"].isin(group_ids)]
+            highest = interest.loc[interest["stop"] == interest["stop"].max(), "id"].iloc[0]
+            highest_list.append(highest)
+
+            if interest.loc[interest["id"] == highest, "cds"].iloc[0] == True:
+                nomore_high = True
+            group_ids.remove(highest)
+
+        if strand == "+":
+            five_prime.update(lowest_list)
+            three_prime.update(highest_list)
+        else:
+            five_prime.update(highest_list)
+            three_prime.update(lowest_list)
+    # Add boolean for five and three prime to dataframe
+    gene_df["three_prime"] = np.where(gene_df["id"].isin(three_prime), True, False)
+    gene_df["five_prime"] = np.where(gene_df["id"].isin(five_prime), True, False)
+    return gene_df
