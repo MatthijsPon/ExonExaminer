@@ -1,6 +1,6 @@
 SPECIES = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee", "c.elegans", "zebrafish", "chicken", "arabidopsis_thaliana"]
-SPECIES_SMALL = ["mouse", "human"]
-CDS_SIZES = ["0,50", "50,300", "300,10000"]
+SPECIES_SMALL = ["mouse", "human", "chicken"]
+CDS_SIZES = ["0,50", "50,300", "300,10000", "0,48", "49,288", "289, 10000", "50,175", "175,300", "300,1000", "1000,5000"]
 
 # Rule to gather all output files from rules
 rule all:
@@ -8,8 +8,7 @@ rule all:
         expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_SMALL),
         "output/exon_gc/full_gc_analysis.txt",
-        # expand("output/codon_usage/human/codon_usage_group_{cds}.cusp", cds=CDS_SIZES),
-        expand("output/codon_usage/human/hbar_graph_{cds}.png", cds=CDS_SIZES),
+        expand("output/codon_usage/{species}/hbar_graph_{cds}.png", species=SPECIES_SMALL, cds=CDS_SIZES),
 
 
 rule exon_incorporation_pickle:
