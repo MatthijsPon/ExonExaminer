@@ -1,6 +1,6 @@
 SPECIES = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee", "c.elegans", "zebrafish", "chicken", "arabidopsis_thaliana"]
 SPECIES_SMALL = ["mouse", "human", "chicken"]
-CDS_SIZES = ["0,50", "50,300", "300,10000", "0,48", "49,288", "289,10000", "50,175", "175,300", "300,1000", "1000,5000"]
+CSD_COMPARISON = ["50,300_vs_0,49", "50,300_vs_301,10000", "49,288_vs_0,48", "49,288_vs_289,10000", "69,259_vs_0,68", "69,259_vs_260,10000"]
 
 # Rule to gather all output files from rules
 # TODO cleanup this rule
@@ -11,7 +11,7 @@ rule all:
         # Gather exon incorporation for all species
         expand("output/exon_incorporation/{species}/cumulative_barplot.png", species=SPECIES),
         # Gather codon usage of species small
-        expand("output/codon_usage/{species}/hbar_graph_{cds}.png",species=SPECIES_SMALL,cds=CDS_SIZES),
+        expand("output/codon_usage/{species}/hbar_graph_{cds}.png",species=SPECIES_SMALL,cds=CSD_COMPARISON),
         # Gather GC content of all species
         # TODO fix this rule!
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_SMALL),
@@ -134,12 +134,13 @@ rule cds_divide_into_groups:
 
 rule analyze_codon_usage:
     input:
-        "output/codon_usage/{species}/group_{cds}.fa"
+        cds1="output/codon_usage/{species}/group_{cds1}.fa",
+        cds2="output/codon_usage/{species}/group_{cds2}.fa",
     output:
-        "output/codon_usage/{species}/hbar_graph_{cds}.png"
+        "output/codon_usage/{species}/hbar_graph_{cds1}_vs_{cds2}.png"
     params:
         out_dir="output/codon_usage/{species}/",
-        cds="{cds}"
+        cds="{cds1}_vs{cds2}"
     shell:
         "python3 scripts/codon_usage.py {input} {params.out_dir} {params.cds}"
 
