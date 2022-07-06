@@ -15,9 +15,11 @@ def parse_arguments():
 
     :return: parsed command line options
     """
-    parser = arg.ArgumentParser(description="Determine codon usage of ")
-    parser.add_argument("fasta", type=str,
+    parser = arg.ArgumentParser(description="Determine the difference in aa and codon usage of two fasta files.")
+    parser.add_argument("fasta1", type=str,
                         help="fasta file with CDS sequences")
+    parser.add_argument("fasta2", type=str,
+                        help="fasta file with CDS sequences to compare to fasta1")
     parser.add_argument("out_dir", type=str,
                         help="output directory (incl. trailing \\")
     parser.add_argument("group_name", type=str,
@@ -25,7 +27,7 @@ def parse_arguments():
     args = parser.parse_args()
     if not args.out_dir.endswith("/") and not args.out_dir.endswith("\\"):
         raise ValueError("Please end the out_dir with a trailing \\ or /.")
-    return args.fasta, args.out_dir, args.group_name
+    return args.fasta1, args.fasta2, args.out_dir, args.group_name
 
 
 def codon_aa_table():
@@ -110,6 +112,43 @@ def codon_usage_df(codon_usage):
     return df
 
 
+def amino_acid_usage(dict):
+    """"""
+    total = sum(dict.values())
+
+    df = codon_aa_table()
+    df2 = pd.DataFrame(dict, index=["count"])
+    df2 = df2.transpose(copy=False)
+    df2 = df2.reset_index()
+    df2 = df2.rename(columns={"index": "codon"})
+    df = df.merge(df2, how="left")
+    df = df.groupby(["amino_acid", "aa_type"]).sum()
+    df = df.reset_index()
+    df["fraction"] = df["count"] / total
+
+    return df
+
+
+def hbar_aa_usage(df, filename):
+    """"""
+    df = df[df.amino_acid != "*"]
+    df = df.sort_values(["amino_acid"])
+    aa_order = ["R", "H", "K", "D", "E", "S", "T", "N", "Q", "C", "P", "G",
+                "A", "V", "I", "L", "M", "F", "Y", "W"]
+    df.amino_acid = df.amino_acid.astype("category")
+    df.amino_acid = df.amino_acid.cat.set_categories(aa_order)
+    df = df.sort_values(["amino_acid"])
+    plt.rcParams.update({"font.size": 12, "figure.figsize": (19.2, 10.8)})
+    ax = sns.barplot(x="diff_perc", y="amino_acid", data=df, hue="aa_type", dodge=False)
+    plt.xlim(-35, 35)
+    plt.xlabel("Difference in amino acid fraction.")
+    plt.ylabel("Amino acid")
+    plt.legend(title="Amino acid side chain type")
+    plt.savefig(filename)
+    plt.close()
+    return None
+
+
 def hbar_codon_usage(df, filename):
     """Create a horizontal codon usage bar graph, coloured on AA type
 
@@ -122,9 +161,8 @@ def hbar_codon_usage(df, filename):
     df.amino_acid = df.amino_acid.astype("category")
     df.amino_acid = df.amino_acid.cat.set_categories(aa_order)
     df = df.sort_values(["amino_acid"])
-    plt.rcParams.update({"font.size": 8, "figure.figsize": (19.2, 10.8)})
-    ax = sns.barplot(x="fraction", y="codon", data=df, hue="aa_type", dodge=False)
-    plt.show()
+    plt.rcParams.update({"font.size": 12, "figure.figsize": (19.2, 10.8)})
+    ax = sns.barplot(x="diff_frac", y="codon", data=df, hue="aa_type", dodge=False)
     plt.savefig(filename)
     plt.close()
     return None
@@ -132,12 +170,28 @@ def hbar_codon_usage(df, filename):
 
 def main():
     """Main function."""
-    fasta, out_dir, group = parse_arguments()
+    fasta1, fasta2, out_dir, group = parse_arguments()
 
-    with open(fasta) as file:
-        cu_dict = determine_codon_usage(file)
-    cu_df = codon_usage_df(cu_dict)
-    hbar_codon_usage(cu_df, "{}hbar_graph_{}.png".format(out_dir, group))
+    with open(fasta1) as file:
+        cu_dict1 = determine_codon_usage(file)
+    with open(fasta2) as file:
+        cu_dict2 = determine_codon_usage(file)
+
+    # Amino acid usage
+    au_df1 = amino_acid_usage(cu_dict1)
+    au_df2 = amino_acid_usage(cu_dict2)
+    au_df = pd.merge(au_df1, au_df2, on=["amino_acid", "aa_type"], how="inner")
+    au_df["diff_frac"] = au_df["fraction_x"] - au_df["fraction_y"]
+    au_df["diff_perc"] = (au_df["fraction_x"] - au_df["fraction_y"]) / au_df["fraction_x"] * 100
+    hbar_aa_usage(au_df, "{}aa_diff_hbar_{}.png".format(out_dir, group))
+
+    # Codon usage
+    cu_df1 = codon_usage_df(cu_dict1)
+    cu_df2 = codon_usage_df(cu_dict2)
+    cu_df = pd.merge(cu_df1, cu_df2, on=["codon", "amino_acid", "aa_type"], how="inner")
+    cu_df["diff_frac"] = cu_df["fraction_x"] - cu_df["fraction_y"]
+
+    hbar_codon_usage(cu_df, "{}codon_usage_hbar_{}.png".format(out_dir, group))
 
     return None
 
