@@ -164,8 +164,7 @@ def main():
     with open(quartile_file) as file:
         Q5, Q95 = file.readline().strip().split("\t")
 
-    Q5 = int(Q5)
-    Q95 = int(Q95)
+    Q5, Q95 = int(Q5), int(Q95)
 
     # Scatterplots with different rolling average windows
     scatterplot_roll_avg(out, "size", "mean_group", "mean_trans", 15,

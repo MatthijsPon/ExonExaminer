@@ -134,8 +134,8 @@ def main():
 
     # Save the 5th and 95th quartile to file
     Q5, Q95 = info_pd.loc["Internal exons"].loc[["5%", "95%"]]
-    Q5 = int(Q5)
-    Q95 = int(Q95)
+    Q5, Q95 = int(Q5), int(Q95)
+
     with open("{}/5_95_quartiles.txt".format(out_dir), "w+") as file:
         file.write("{}\t{}".format(Q5, Q95))
     return None
