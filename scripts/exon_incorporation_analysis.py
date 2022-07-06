@@ -29,80 +29,40 @@ def parse_arguments():
                         help="text file containing the Q5 and Q95, created by gff_statistics.py")
     parser.add_argument("out_dir", type=str,
                         help="output directory (incl. trailing \"/\")")
-    parser.add_argument("sizes_of_interest", type=int, nargs="+",
-                        help="size cutoff(s) for selecting exon sizes")
     args = parser.parse_args()
 
     if not os.path.exists(args.pickle_file):
         raise FileNotFoundError("Pickle file does not exist.")
 
-    return args.pickle_file, args.quartile_file, args.out_dir, args.sizes_of_interest
+    return args.pickle_file, args.quartile_file, args.out_dir
 
 
-def investigate_normality_plots(data, column_of_interest, out_dir, filename):
-    """Create a histogram and QQplot vs. normal distribution for investigating normality on the data
+def cumulative_barplot(data, x, y, filename):
+    """Create a cumulative bar plot.
 
-    :param data: pandas dataframe, dataframe containing data
-    :param column_of_interest: str, column of interest in the dataframe
-    :param out_dir: str, output directory
-    :param filename: str, start of filename for images to be saved to
-    :return: None, images are created
+    :param data: pandas dataframe object, with data to plot
+    :param x: str/index, index to access x values of data
+    :param y: str/index, index to access y values of data
+    :param filename: str, output filename for figure
+    :return: None, files are created
     """
-    # Histogram
-    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
-    data[column_of_interest].hist()  # Histogram
-    plt.savefig("{}/{}_histogram.png".format(out_dir, filename))
+    # Get highest and lowest value of cumulative bar plot
+    low = int(data.loc[data[y] == data[y].min(), "size"])
+    high = int(data.loc[data[y] == data[y].max(), "size"])
+
+    plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8)})
+    # Update axes
+    plt.xticks([0, 50, 150, 250, 350, 500, 750, 1000, 1250, 1500, 1750, 2000])
+    plt.xlabel("Size (nt)")
+    plt.ylabel("Cumulative ratio (all genes)")
+    plt.yticks([0])
+    plt.axvline(x=low, color="y", linestyle=":", label="Positive incorporation start ({} nt)".format(low))
+    plt.axvline(x=high, color="purple", linestyle=":", label="Positive incorporation end ({} nt)".format(high))
+    plt.bar(x=data[x], height=data[y])
+    plt.legend()
+    plt.savefig(filename)
     plt.close()
-    # QQ plot
-    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
-    stats.probplot(data[column_of_interest], dist="norm", plot=plt)  # QQ plot
-    plt.savefig("{}/{}_QQ_plot_vs_normal_distribution.png".format(out_dir, filename))
-    plt.close()
-    return None
-
-
-def statistical_information(result_df, out_file, out_dir, size):
-    """Calculate Welsch T-test if possible and output some statistical information
-
-    :param result_df: pandas dataframe, ratios and sizes
-    :param out_file: str, file to output information to
-    :param out_dir: str, output directory path
-    :param size: int, size value to split the data on
-    :return: None, all information is outputted into outfile and figure
-    """
-    total = None
-    out_file.write("----- Exons of interest: {}+ bp -----\n".format(size))
-    subset = result_df.loc[result_df["exon_size"] >= size]
-    if size > 0:
-        total = result_df[~result_df["exon_size"].isin(subset["exon_size"])]
-
-    out_file.write("Total average expression difference {}: {:.2f}\n"
-                   "".format(size, statistics.fmean(list(subset["ratio"]))))
-    out_file.write("No. of internal exons examined: {}\n".format(len(subset.index)))
-
-    # Get mean, median, mode, quartiles, etc. for target group
-    info_sub = subset.describe().transpose()
-    out_file.write("\nInformation target group:\n")
-    out_file.write(info_sub.to_string())
-    out_file.write("\n")
-
-    if total is not None:
-        # Get mean, median, mode, quartiles, etc. for leftover group
-        info_total = total.describe().transpose()
-        out_file.write("\nInformation rest group:\n")
-        out_file.write(info_total.to_string())
-        out_file.write("\n")
-
-        # Perform Welch T-test
-        welch_t, p_val = stats.ttest_ind(total["ratio"], subset["ratio"], equal_var=False)
-        out_file.write("Welch t-statistic: {}, p-value: {}\n".format(welch_t, p_val))
-
-    out_file.write("\n\n")
-    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
-    subset.plot(x="exon_size", y="ratio", style="o")
-    plt.savefig("{}/internal_exon_ratio_{}+.png".format(out_dir, size))
-    plt.close()
-    return None
+    return low, high
 
 
 def scatterplot_roll_avg(data, x, y, hue, window, out_file,
@@ -155,37 +115,9 @@ def scatterplot_roll_avg(data, x, y, hue, window, out_file,
     return None
 
 
-def cumulative_barplot(data, x, y, filename):
-    """Create a cumulative bar plot.
-
-    :param data: pandas dataframe object, with data to plot
-    :param x: str/index, index to access x values of data
-    :param y: str/index, index to access y values of data
-    :param filename: str, output filename for figure
-    :return: None, files are created
-    """
-    # Get highest and lowest value of cumulative bar plot
-    low = int(data.loc[data[y] == data[y].min(), "size"])
-    high = int(data.loc[data[y] == data[y].max(), "size"])
-
-    plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8)})
-    # Update axes
-    plt.xticks([0, 50, 150, 250, 350, 500, 750, 1000, 1250, 1500, 1750, 2000])
-    plt.xlabel("Size (nt)")
-    plt.ylabel("Cumulative ratio (all genes)")
-    plt.yticks([0])
-    plt.axvline(x=low, color="y", linestyle=":", label="Positive incorporation start ({} nt)".format(low))
-    plt.axvline(x=high, color="purple", linestyle=":", label="Positive incorporation end ({} nt)".format(high))
-    plt.bar(x=data[x], height=data[y])
-    plt.legend()
-    plt.savefig(filename)
-    plt.close()
-    return low, high
-
-
 def main():
     """Main function."""
-    pickle_file, quartile_file, out_dir, sizes_of_interest = parse_arguments()
+    pickle_file, quartile_file, out_dir = parse_arguments()
 
     results = pd.read_pickle(pickle_file)
 
@@ -198,12 +130,6 @@ def main():
     with open("{}/genes_ratio_smaller_0.csv".format(out_dir), "w+") as outfile:
         outfile.write(",".join(ratio_lower))
 
-    investigate_normality_plots(results, "ratio", out_dir, "ratio")
-
-    # Output Welch's T-test and dataframe distributions to file
-    with open("{}/statistical_information.txt".format(out_dir), "w+") as out_file:
-        for size in sizes_of_interest:
-            statistical_information(results, out_file, out_dir, size)
 
     data = {
         "size": [],
