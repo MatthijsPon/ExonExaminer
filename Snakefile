@@ -6,31 +6,18 @@ CDS_SIZES = ["0,50", "50,300", "300,10000", "0,48", "49,288", "289,10000", "50,1
 # TODO cleanup this rule
 rule all:
     input:
-        expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
+        # Gather exon statistics for all species
+        expand("output/statistics/{species}_exon_statistics.txt", species=SPECIES),
+        # Gather exon incorporation for all species
+        expand("output/exon_incorporation/{species}/cumulative_barplot.png", species=SPECIES),
+        # Gather codon usage of species small
+        expand("output/codon_usage/{species}/hbar_graph_{cds}.png",species=SPECIES_SMALL,cds=CDS_SIZES),
+        # Gather GC content of all species
+        # TODO fix this rule!
         expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_SMALL),
         "output/exon_gc/full_gc_analysis.txt",
-        expand("output/codon_usage/{species}/hbar_graph_{cds}.png", species=SPECIES_SMALL, cds=CDS_SIZES),
-
-
-rule exon_incorporation_pickle:
-    input:
-        "input/ENSEMBL/{species}.gff3"
-    output:
-        "output/exon_incorporation/{species}_exon_usage.pickle"
-    shell:
-        "python3 scripts/exon_incorporation_pickle.py {input} {output}"
-
-
-rule exon_incorporation_script:
-    input:
-        "output/exon_incorporation/{species}_exon_usage.pickle"
-    output:
-        "output/exon_incorporation/{species}/statistical_information.txt"
-    params:
-        out_dir="output/exon_incorporation/{species}/",
-        sizes="0 100 250 500 1000 2500"
-    shell:
-        "python3 scripts/exon_incorporation_analysis.py {input} {params.out_dir} {params.sizes}"
+        # TODO Gather expression data for humans
+        ""
 
 
 rule parse_gff3:
@@ -41,17 +28,38 @@ rule parse_gff3:
     shell:
         "python3 scripts/parse_gff3.py {input} {output}"
 
-
 rule gff_statistics:
     input:
         "output/parsed_gff/{species}.pickle"
     output:
-        "output/statistics/{species}_exon_statistics.txt"
+        "output/statistics/{species}_exon_statistics.txt",
+        "output/statistics/{species}_5_95_quartiles.txt"
     params:
         file_pre="{species}",
         out_dir="output/statistics"
     shell:
         "python3 scripts/exon_statistics {input} {params.out_dir} {params.file_pre}"
+
+
+rule exon_incorporation_pickle:
+    input:
+        "input/ENSEMBL/{species}.gff3"
+    output:
+        "output/exon_incorporation/{species}_exon_usage.pickle"
+    shell:
+        "python3 scripts/exon_incorporation_pickle.py {input} {output}"
+
+rule exon_incorporation_script:
+    input:
+        pickle="output/exon_incorporation/{species}_exon_usage.pickle",
+        quartiles="output/statistics/{species}_5_95_quartiles.txt"
+    output:
+        "output/exon_incorporation/{species}/cumulative_barplot.png",
+        "output/exon_incorporation/{species}/exon_incorporation_positive_borders.txt"
+    params:
+        out_dir="output/exon_incorporation/{species}/",
+    shell:
+        "python3 scripts/exon_incorporation_analysis.py {input.pickle} {input.quartiles} {params.out_dir}"
 
 
 rule exons_2_bed:
@@ -62,7 +70,6 @@ rule exons_2_bed:
     shell:
         "python3 scripts/internal_exons_2_bed.py {input} {output}"
 
-
 rule temp_gunzip_fasta:
     input:
         "input/ENSEMBL/fasta/{species}.fa.gz" 
@@ -70,7 +77,6 @@ rule temp_gunzip_fasta:
         "input/ENSEMBL/fasta/{species}.fa"
     shell:
         "gunzip -c {input} > {output}"
-
 
 rule calc_gc_exons:
     input:
@@ -80,7 +86,6 @@ rule calc_gc_exons:
         "output/exon_gc/{species}_gc_exons.bed"
     shell:
         "bedtools nuc -fi {input.fa} -bed {input.bed} > {output} && rm {input.fa}"
-
 
 # TODO finish this rule and script
 rule gc_exons_analysis:
@@ -127,7 +132,6 @@ rule cds_divide_into_groups:
         ["output/codon_usage/{species}/group_" + cds + ".fa" for cds in CDS_SIZES]
     shell:
         "python3 scripts/cds_split_fa_2_size_groups.py {input.fa} {input.pickle} {output}"
-
 
 rule analyze_codon_usage:
     input:
