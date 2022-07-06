@@ -1,6 +1,6 @@
 SPECIES = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee", "c.elegans", "zebrafish", "chicken", "arabidopsis_thaliana"]
 SPECIES_SMALL = ["mouse", "human", "chicken"]
-CDS_SIZES = ["0,50", "50,300", "300,10000", "0,48", "49,288", "289, 10000", "50,175", "175,300", "300,1000", "1000,5000"]
+CDS_SIZES = ["0,50", "50,300", "300,10000", "0,48", "49,288", "289,10000", "50,175", "175,300", "300,1000", "1000,5000"]
 
 # Rule to gather all output files from rules
 rule all:
