@@ -3,6 +3,7 @@ SPECIES_SMALL = ["mouse", "human", "chicken"]
 CDS_SIZES = ["0,50", "50,300", "300,10000", "0,48", "49,288", "289,10000", "50,175", "175,300", "300,1000", "1000,5000"]
 
 # Rule to gather all output files from rules
+# TODO cleanup this rule
 rule all:
     input:
         expand("output/exon_incorporation/{species}/statistical_information.txt", species=SPECIES),
@@ -80,6 +81,8 @@ rule calc_gc_exons:
     shell:
         "bedtools nuc -fi {input.fa} -bed {input.bed} > {output} && rm {input.fa}"
 
+
+# TODO finish this rule and script
 rule gc_exons_analysis:
     input:
         gc=expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_SMALL),
@@ -87,7 +90,7 @@ rule gc_exons_analysis:
     output:
         "output/exon_gc/full_gc_analysis.txt"
     shell:
-        "python3 scripts/full_gc_analysis.py {output} {input.gc} {input.usage} && touch {output}"
+        "python3 scripts/full_gc_analysis.py {output} {input.gc} {input.usage}"
 
 
 rule cds_2_bed_phase_aware:
@@ -126,17 +129,6 @@ rule cds_divide_into_groups:
         "python3 scripts/cds_split_fa_2_size_groups.py {input.fa} {input.pickle} {output}"
 
 
-#! The files are too big for cusp.
-# rule cusp:
-#     input:
-#         "output/codon_usage/{species}/group_{cds}.fa"
-#     output:
-#         "output/codon_usage/{species}/codon_usage_group_{cds}.cusp"
-#     params:
-#         cusp_install="/exports/humgen/mnpon/EMBOSS/bin/cusp"
-#     shell:
-#         "{params.cusp_install} -sequence {input} -outfile {output}"
-
 rule analyze_codon_usage:
     input:
         "output/codon_usage/{species}/group_{cds}.fa"
@@ -148,34 +140,3 @@ rule analyze_codon_usage:
     shell:
         "python3 scripts/codon_usage.py {input} {params.out_dir} {params.cds}"
 
-
-rule select_prot_of_interest:
-    input:
-        genes_of_interest="output/codon_usage/{species}_subset.csv",
-        renamed_fa="output/codon_usage/{species}_cds_seq_renamed.fa",
-    output:
-        "output/codon_usage/{species}_cds_seq_renamed_subset.fa"
-    shell:
-        "python3 scripts/select_yfg_from_fasta.py {input.renamed_fa} {input.genes_of_interest} {output}"
-
-rule transeq:
-    input:
-        "output/codon_usage/{species}_cds_seq_renamed.fa"
-    output:
-        "output/exon_orthologs/{species}_translated_cds.prot"
-    params:
-        transeq_install="/exports/humgen/mnpon/EMBOSS/bin/transeq"
-    shell:
-        "{params.transeq_install} -sequence {input} -outseq {output}"
-
-
-
-rule align_exons_2_prot:
-    input:
-        exon_prot="output/exon_orthologs/{species1}_translated_cds.prot",
-        whole_prot="input/ENSEMBLE/biomart/{species2}_all_proteins.prot",
-        orthologs="input/ENSEMBLE/biomart/gene_orthologs_{species1}_{species2}"
-    output:
-        "output/exon_orthologs/exon_orthologs_{species1}_to_{species2}.csv"
-    shell:
-        "python3 "
