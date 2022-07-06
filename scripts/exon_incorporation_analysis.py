@@ -4,6 +4,8 @@ Author: Matthijs Pon
 Description: This script parses an ENSEMBL gff3 file and determines the average
              inclusion of exons compared to their length.
 """
+import math
+
 from helpers import get_internal_exons, yield_single_gene, determine_target_exon
 from matplotlib import pyplot as plt
 
@@ -12,6 +14,7 @@ import argparse as arg
 import pandas as pd
 import scipy.stats as stats
 import statistics
+import seaborn as sns
 
 
 def parse_arguments():
@@ -21,13 +24,19 @@ def parse_arguments():
     """
     parser = arg.ArgumentParser(description="Determine the average inclusion of exons compared to their length.")
     parser.add_argument("pickle_file", type=str,
-                        help="pandas pickle file create by exon_incorporation_pickle.py")
+                        help="pandas pickle file created by exon_incorporation_pickle.py")
+    parser.add_argument("quartile_file", type=str,
+                        help="text file containing the Q5 and Q95, created by gff_statistics.py")
     parser.add_argument("out_dir", type=str,
-                        help="output directory (incl. trailing \"/\"), default: ./data/out/")
+                        help="output directory (incl. trailing \"/\")")
     parser.add_argument("sizes_of_interest", type=int, nargs="+",
                         help="size cutoff(s) for selecting exon sizes")
     args = parser.parse_args()
-    return args.pickle_file, args.out_dir, args.sizes_of_interest
+
+    if not os.path.exists(args.pickle_file):
+        raise FileNotFoundError("Pickle file does not exist.")
+
+    return args.pickle_file, args.quartile_file, args.out_dir, args.sizes_of_interest
 
 
 def investigate_normality_plots(data, column_of_interest, out_dir, filename):
@@ -96,78 +105,94 @@ def statistical_information(result_df, out_file, out_dir, size):
     return None
 
 
-def scatterplot_roll_avg(data, x, y, window, out_dir, filename):
+def scatterplot_roll_avg(data, x, y, hue, window, out_file,
+                         Q5=49, Q95=288, inc_bottom=69, inc_top=199,
+                         x_min=None, x_max=None):
     """Create a scatter plot with a moving average.
 
     :param data: 2d object (e.g. pandas dataframe) with data to plot
     :param x: str/index, index to access x values of data
     :param y: str/index, index to access y values of data
     :param window: int, no. of data points to use in the rolling average
-    :param out_dir: str, output directory
-    :param filename: str, output filename
+    :param out_file: str, output filename
+    :param Q5: int, 5% quartile size
+    :param Q95: int, 95% quartile size
+    :param inc_bottom: int, size corresponding to the bottom of the cumulative bar plot
+    :param inc_top: int, size corresponding to the top of the cumulative bar plot
+    :param x_min: int, limit of the left side of the x scale
+    :param x_max: int, limit of the right side of the x scale
     :return: None, files are created
     """
-    plt.rcParams.update({"font.size": 20, "figure.figsize": (19.2, 10.8)})
+    plt.rcParams.update({"font.size": 8, "figure.figsize": (19.2, 10.8)})
     plt.grid()
-    # Line graph per group
-    plt.scatter(x=data[x], y=data[y])
+    if x_max:
+        plt.xlim(right=x_max)
+    elif x_min:
+        plt.xlim(left=x_min)
+    elif x_min and x_max:
+        plt.xlim(x_min, x_max)
+
+    # Linegraph with continuous colour palette
+    cmap = sns.color_palette("crest", as_cmap=True)
+    points = plt.scatter(x=data[x], y=data[y], c=data[hue], cmap=cmap)
+    plt.colorbar(points)
+
     # Quartile lines
-    plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
-    plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
-    plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
+    plt.axvline(x=Q5, color="r", linestyle=":", label="Q05 ({} nt)".format(Q5))
+    plt.axvline(x=Q95, color="g", linestyle=":", label="Q95 ({} nt)".format(Q95))
+    plt.axvline(x=inc_bottom, color="y", linestyle=":", label="Positive incorporation start ({} nt)".format(inc_bottom))
+    plt.axvline(x=inc_top, color="purple", linestyle=":", label="Positive incorporation end ({} nt)".format(inc_top))
+
     # rolling average line
     data['MA_group'] = data[y].rolling(window=window).mean()
     plt.plot(data[x], data["MA_group"], color="r", label="Rolling average of {} data points".format(window))
+
     plt.xlabel("Exon size (nt)")
-    plt.ylabel("Average usage")
+    plt.ylabel("Average exon incorporation")
     plt.legend()
-    plt.savefig("{}/scatterplot_ratio_{}.png".format(out_dir, filename))
+    plt.savefig(out_file)
     plt.close()
     return None
 
 
-def cumulative_barplot(data, x, y, out_dir, filename):
-    """Create a comolative barplot.
+def cumulative_barplot(data, x, y, filename):
+    """Create a cumulative bar plot.
 
     :param data: pandas dataframe object, with data to plot
     :param x: str/index, index to access x values of data
     :param y: str/index, index to access y values of data
-    :param out_dir: str, output directory
-    :param filename: str, output filename
+    :param filename: str, output filename for figure
     :return: None, files are created
     """
+    # Get highest and lowest value of cumulative bar plot
+    low = int(data.loc[data[y] == data[y].min(), "size"])
+    high = int(data.loc[data[y] == data[y].max(), "size"])
+
     plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8)})
     # Update axes
     plt.xticks([0, 50, 150, 250, 350, 500, 750, 1000, 1250, 1500, 1750, 2000])
     plt.xlabel("Size (nt)")
     plt.ylabel("Cumulative ratio (all genes)")
     plt.yticks([0])
+    plt.axvline(x=low, color="y", linestyle=":", label="Positive incorporation start ({} nt)".format(low))
+    plt.axvline(x=high, color="purple", linestyle=":", label="Positive incorporation end ({} nt)".format(high))
     plt.bar(x=data[x], height=data[y])
-    # Human genome quartiles (.05, .50, .95)
-    plt.axvline(x=49, color="r", linestyle=":", label="Q05 (size: 49)")
-    plt.axvline(x=122, color="y", linestyle=":", label="Q50 (size: 122)")
-    plt.axvline(x=288, color="g", linestyle=":", label="Q95 (size: 288)")
     plt.legend()
-    plt.savefig("{}/{}.png".format(out_dir, filename))
+    plt.savefig(filename)
     plt.close()
-
-    # Output lowest and highest value, to determine peaks
-    print(data.loc[data[y] == data[y].min()])
-    print(data.loc[data[y] == data[y].max()])
-    return None
+    return low, high
 
 
 def main():
     """Main function."""
-    pickle_file, out_dir, sizes_of_interest = parse_arguments()
+    pickle_file, quartile_file, out_dir, sizes_of_interest = parse_arguments()
 
-    if not os.path.exists(pickle_file):
-        raise FileNotFoundError("Pickle file does not exist.")
     results = pd.read_pickle(pickle_file)
 
+    # Output genes which have a higher and lower incorporation ratio than 0
+    # for further analysis in the expression script
     ratio_higher = results.loc[results["ratio"] >= 0, "id"]
     ratio_lower = results.loc[results["ratio"] < 0, "id"]
-
     with open("{}/genes_ratio_biggerequal_0.csv".format(out_dir), "w+") as outfile:
         outfile.write(",".join(ratio_higher))
     with open("{}/genes_ratio_smaller_0.csv".format(out_dir), "w+") as outfile:
@@ -184,10 +209,9 @@ def main():
         "size": [],
         "sum_smaller": [],
         "mean_group": [],
+        "mean_trans": [],
         "count": []
     }
-    # TEMP
-    # TODO remove single transcript genes?
     step = 1
     sizes_of_interest = [i for i in range(0, 2000, step)]
     for size in sizes_of_interest:
@@ -198,14 +222,44 @@ def main():
             data["size"].append(size)
             data["sum_smaller"].append(sum(list(subset_small["ratio"])))
             data["mean_group"].append(statistics.fmean(list(subset.loc[subset["exon_size"] < (size + step), "ratio"])))
+            # Take the number of transcripts, with 10 as the max
+            # (otherwise the colour bar gets saturated by extreme values)
+            data["mean_trans"].append(
+                min(statistics.fmean(list(subset.loc[subset["exon_size"] < (size + step), "no_trans"])), 10))
             data["count"].append(len(subset.index))
     out = pd.DataFrame(data)
 
-    scatterplot_roll_avg(out, "size", "mean_group", 15, out_dir, "step1_window15")
-    scatterplot_roll_avg(out, "size", "mean_group", 20, out_dir, "step1_window20")
-    scatterplot_roll_avg(out, "size", "mean_group", 25, out_dir, "step1_window25")
-    cumulative_barplot(out, "size", "sum_smaller", out_dir, "barplot_cumulative")
+    # Cumulative bar plot
+    inc_border_low, inc_border_high = \
+        cumulative_barplot(out, "size", "sum_smaller",
+                           "{}/cumulative_barplot.png".format(out_dir))
+
+    # Get quartile values and convert to integer
+    with open(quartile_file) as file:
+        Q5, Q95 = file.readline().strip().split("\t")
+
+    Q5 = int(Q5)
+    Q95 = int(Q95)
+
+    # Scatterplots with different rolling average windows
+    scatterplot_roll_avg(out, "size", "mean_group", "mean_trans", 15,
+                         "{}/scatterplot_rolling_avg_window15.png".format(out_dir),
+                         Q5, Q95, inc_border_low, inc_border_high)
+    scatterplot_roll_avg(out, "size", "mean_group", "mean_trans", 20,
+                         "{}/scatterplot_rolling_avg_window20.png".format(out_dir),
+                         Q5, Q95, inc_border_low, inc_border_high)
+    scatterplot_roll_avg(out, "size", "mean_group", "mean_trans", 25,
+                         "{}/scatterplot_rolling_avg_window25.png".format(out_dir),
+                         Q5, Q95, inc_border_low, inc_border_high)
+
+    # Output lowest and highest value, to determine peaks
+    with open("{}/exon_incorporation_positive_borders.txt".format(out_dir), "w+") as file:
+        file.write("{}\t{}".format(inc_border_low, inc_border_high))
+
+    return None
 
 
 if __name__ == '__main__':
     main()
+
+
