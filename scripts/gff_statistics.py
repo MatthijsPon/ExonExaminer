@@ -15,13 +15,13 @@ def parse_arguments():
 
     :return: parsed command line options
     """
-    parser = arg.ArgumentParser(description="Parse a gff3 file into a pandas dataframe (.pickle) file.")
+    parser = arg.ArgumentParser(description="Use a parsed gff3 file to calculate gff statistics.")
     parser.add_argument("pickle", type=str,
                         help="gff dataframe pickle file")
     parser.add_argument("out_dir", type=str,
                         help="output directory")
     args = parser.parse_args()
-    return args.gff3_file, args.out_file
+    return args.pickle, args.out_dir
 
 
 def exon_len_histograms(exon_df, out_folder, fig_name, bins, title=None, max_height=0):
@@ -85,7 +85,6 @@ def main():
         to_file = temp_data.describe()
         to_file["mode"] = temp_data.mode().iloc[0]
         to_file["median"] = temp_data.median()
-        print(temp_data)
         # Add to dict for printing to file
         output[item] = to_file
         # create histogram
@@ -132,6 +131,14 @@ def main():
     # Save statistics to txt file
     info_pd = pd.concat(stat_list).set_index("exon_type")
     info_pd.to_csv("{}/exon_statistics.txt".format(out_dir), sep="\t", mode="a+")
+
+    # Save the 5th and 95th quartile to file
+    Q5, Q95 = info_pd.loc["Internal exons"].loc[["5%", "95%"]]
+    Q5 = int(Q5)
+    Q95 = int(Q95)
+    with open("{}/5_95_quartiles.txt".format(out_dir), "w+") as file:
+        file.write("{}\t{}".format(Q5, Q95))
+    return None
 
 
 if __name__ == '__main__':

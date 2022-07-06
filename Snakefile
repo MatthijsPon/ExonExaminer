@@ -32,13 +32,12 @@ rule gff_statistics:
     input:
         "output/parsed_gff/{species}.pickle"
     output:
-        "output/statistics/{species}_exon_statistics.txt",
-        "output/statistics/{species}_5_95_quartiles.txt"
+        "output/statistics/{species}/exon_statistics.txt",
+        "output/statistics/{species}/5_95_quartiles.txt"
     params:
-        file_pre="{species}",
-        out_dir="output/statistics"
+        out_dir="output/statistics/{species}/"
     shell:
-        "python3 scripts/exon_statistics {input} {params.out_dir} {params.file_pre}"
+        "python3 scripts/gff_statistics.py {input} {params.out_dir}"
 
 
 rule exon_incorporation_pickle:
@@ -52,7 +51,7 @@ rule exon_incorporation_pickle:
 rule exon_incorporation_script:
     input:
         pickle="output/exon_incorporation/{species}_exon_usage.pickle",
-        quartiles="output/statistics/{species}_5_95_quartiles.txt"
+        quartiles="output/statistics/{species}/5_95_quartiles.txt"
     output:
         "output/exon_incorporation/{species}/cumulative_barplot.png",
         "output/exon_incorporation/{species}/exon_incorporation_positive_borders.txt"
