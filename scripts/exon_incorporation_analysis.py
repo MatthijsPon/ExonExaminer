@@ -73,6 +73,7 @@ def scatterplot_roll_avg(data, x, y, hue, window, out_file,
     :param data: 2d object (e.g. pandas dataframe) with data to plot
     :param x: str/index, index to access x values of data
     :param y: str/index, index to access y values of data
+    :param hue: str/index, index to access hue values of data
     :param window: int, no. of data points to use in the rolling average
     :param out_file: str, output filename
     :param Q5: int, 5% quartile size
@@ -83,7 +84,7 @@ def scatterplot_roll_avg(data, x, y, hue, window, out_file,
     :param x_max: int, limit of the right side of the x scale
     :return: None, files are created
     """
-    plt.rcParams.update({"font.size": 8, "figure.figsize": (19.2, 10.8)})
+    plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8), "legend.loc": "upper left"})
     plt.grid()
     if x_max:
         plt.xlim(right=x_max)
@@ -95,7 +96,8 @@ def scatterplot_roll_avg(data, x, y, hue, window, out_file,
     # Linegraph with continuous colour palette
     cmap = sns.color_palette("crest", as_cmap=True)
     points = plt.scatter(x=data[x], y=data[y], c=data[hue], cmap=cmap)
-    plt.colorbar(points)
+    cbar = plt.colorbar(points)
+    cbar.set_label("No. of transcripts in gene (max. 10)", rotation=270)
 
     # Quartile lines
     plt.axvline(x=Q5, color="r", linestyle=":", label="Q05 ({} nt)".format(Q5))
