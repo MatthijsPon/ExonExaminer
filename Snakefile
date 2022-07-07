@@ -13,9 +13,7 @@ rule all:
         # Gather codon usage of species small
         expand("output/codon_usage/{species}/hbar_graph_{cds}.png",species=SPECIES_SMALL,cds=CSD_COMPARISON),
         # Gather GC content of all species
-        # TODO fix this rule!
-        expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_SMALL),
-        "output/exon_gc/full_gc_analysis.txt",
+        expand("output/exon_gc/{species}/scatter_roll_avg_20_by_size.png", species=SPECIES_SMALL),
         # TODO Gather expression data for humans
         ""
 
@@ -86,15 +84,19 @@ rule calc_gc_exons:
     shell:
         "bedtools nuc -fi {input.fa} -bed {input.bed} > {output} && rm {input.fa}"
 
-# TODO finish this rule and script
 rule gc_exons_analysis:
     input:
-        gc=expand("output/exon_gc/{species}_gc_exons.bed", species=SPECIES_SMALL),
-        usage=expand("output/exon_incorporation/{species}_exon_usage.pickle", species=SPECIES_SMALL)
+        pickle="output/exon_incorporation/{species}_exon_usage.pickle",
+        bed="output/exon_gc/{species}_gc_exons.bed",
+        quartiles="output/statistics/{species}/5_95_quartiles.txt",
+        inc_borders="output/exon_incorporation/{species}/exon_incorporation_positive_borders.txt"
     output:
-        "output/exon_gc/full_gc_analysis.txt"
+        "output/exon_gc/{species}/scatter_roll_avg_20_by_size.png"
+    params:
+        outdir="output/exon_gc/{species}/"
     shell:
-        "python3 scripts/full_gc_analysis.py {output} {input.gc} {input.usage}"
+        "python3 scripts/gc_analysis.py {input.pickle} {input.bed} "
+        "{input.quartiles} {input.inc_borders} {params.outdir}"
 
 
 rule cds_2_bed_phase_aware:
