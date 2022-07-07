@@ -3,7 +3,6 @@ SPECIES_SMALL = ["mouse", "human", "chicken"]
 CSD_COMPARISON = ["50,300_vs_0,49", "50,300_vs_301,100000", "49,288_vs_0,48", "49,288_vs_289,1000000", "69,259_vs_0,68", "69,259_vs_260,100000"]
 
 # Rule to gather all output files from rules
-# TODO cleanup this rule
 rule all:
     input:
         # Gather exon statistics for all species
@@ -14,8 +13,6 @@ rule all:
         expand("output/codon_usage/{species}/hbar_graph_{cds}.png",species=SPECIES_SMALL,cds=CSD_COMPARISON),
         # Gather GC content of all species
         expand("output/exon_gc/{species}/scatter_roll_avg_20_by_size.png", species=SPECIES_SMALL),
-        # TODO Gather expression data for humans
-        ""
 
 
 rule parse_gff3:
@@ -130,7 +127,7 @@ rule cds_divide_into_groups:
         fa="output/codon_usage/{species}_cds_seq_renamed.fa",
         pickle="output/parsed_gff/{species}.pickle"
     output:
-        ["output/codon_usage/{species}/group_" + cds + ".fa" for cds in CDS_SIZES]
+        "output/codon_usage/{species}/group_{cds}.fa"
     shell:
         "python3 scripts/cds_split_fa_2_size_groups.py {input.fa} {input.pickle} {output}"
 
