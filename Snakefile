@@ -1,6 +1,6 @@
 SPECIES = ["mouse", "human", "cat", "dog", "bonobo", "chimpanzee", "c.elegans", "zebrafish", "chicken", "arabidopsis_thaliana"]
 SPECIES_SMALL = ["mouse", "human", "chicken"]
-CSD_COMPARISON = ["50,300_vs_0,49", "50,300_vs_301,10000", "49,288_vs_0,48", "49,288_vs_289,10000", "69,259_vs_0,68", "69,259_vs_260,10000"]
+CSD_COMPARISON = ["50,300_vs_0,49", "50,300_vs_301,100000", "49,288_vs_0,48", "49,288_vs_289,1000000", "69,259_vs_0,68", "69,259_vs_260,100000"]
 
 # Rule to gather all output files from rules
 # TODO cleanup this rule
