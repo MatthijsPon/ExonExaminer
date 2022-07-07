@@ -6,7 +6,7 @@ CSD_COMPARISON = ["50,300_vs_0,49", "50,300_vs_301,100000", "49,288_vs_0,48", "4
 rule all:
     input:
         # Gather exon statistics for all species
-        expand("output/statistics/{species}_exon_statistics.txt", species=SPECIES),
+        expand("output/statistics/{species}/exon_statistics.txt", species=SPECIES),
         # Gather exon incorporation for all species
         expand("output/exon_incorporation/{species}/cumulative_barplot.png", species=SPECIES),
         # Gather codon usage of species small
