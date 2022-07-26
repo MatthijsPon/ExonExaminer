@@ -122,6 +122,16 @@ rule rename_cds_fasta:
     shell:
         "python3 scripts/rename_cds_2_exon.py {input.fa} {input.pickle} {output}"
 
+rule codon_usage_over_size:
+    input:
+        "output/codon_usage/{species}_cds_seq_renamed.fa"
+    output:
+        "output/codon_usage/{species}/line_cu_over_size.png"
+    params:
+        outdir="output/codon_usage/{species}/"
+    shell:
+        "python3 scripts/codon_usage_over_size.py {input} {params.outdir}"
+
 rule cds_divide_into_groups:
     input:
         fa="output/codon_usage/{species}_cds_seq_renamed.fa",
