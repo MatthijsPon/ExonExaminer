@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Author: Matthijs Pon
-Description: Analyse the codon usage of a fasta file
+Description: Analyse the codon usage difference between two fasta files
 """
 import argparse as arg
 import pandas as pd
