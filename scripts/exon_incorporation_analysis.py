@@ -84,7 +84,7 @@ def scatterplot_roll_avg(data, x, y, hue, window, out_file,
     :param x_max: int, limit of the right side of the x scale
     :return: None, files are created
     """
-    plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8), "legend.loc": "upper left"})
+    plt.rcParams.update({"font.size": 20, "figure.figsize": (20, 7), "legend.loc": "upper left"})
     plt.grid()
     if x_max:
         plt.xlim(right=x_max)
