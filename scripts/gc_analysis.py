@@ -15,8 +15,6 @@ def parse_arguments():
     :return: parsed command line options
     """
 
-    pickle, bed, quartile_file, inc_border_file, out_dir = parse_arguments()
-
     parser = arg.ArgumentParser(description="Analyse the gc contents of exons.")
     parser.add_argument("pickle", type=str,
                         help="exon incorporation pickle file")

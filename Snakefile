@@ -10,7 +10,7 @@ rule all:
         # Gather exon incorporation for all species
         expand("output/exon_incorporation/{species}/cumulative_barplot.png", species=SPECIES),
         # Gather codon usage of species small
-        expand("output/codon_usage/{species}/hbar_graph_{cds}.png",species=SPECIES_SMALL,cds=CSD_COMPARISON),
+        expand("output/codon_usage/{species}/aa_diff_hbar_{cds}.png",species=SPECIES_SMALL,cds=CSD_COMPARISON),
         # Gather GC content of all species
         expand("output/exon_gc/{species}/scatter_roll_avg_20_by_size.png", species=SPECIES_SMALL),
 
@@ -146,10 +146,12 @@ rule analyze_codon_usage:
         cds1="output/codon_usage/{species}/group_{cds1}.fa",
         cds2="output/codon_usage/{species}/group_{cds2}.fa",
     output:
-        "output/codon_usage/{species}/hbar_graph_{cds1}_vs_{cds2}.png"
+        "output/codon_usage/{species}/aa_diff_hbar_{cds1}_vs_{cds2}.png",
+        "output/codon_usage/{species}/codon_usage_hbar_{cds1}_vs_{cds2}.png"
+
     params:
         out_dir="output/codon_usage/{species}/",
-        cds="{cds1}_vs{cds2}"
+        cds="{cds1}_vs_{cds2}"
     shell:
         "python3 scripts/codon_usage.py {input} {params.out_dir} {params.cds}"
 
