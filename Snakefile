@@ -10,7 +10,7 @@ rule all:
         # Gather exon incorporation for all species
         expand("output/exon_incorporation/{species}/cumulative_barplot.png", species=SPECIES),
         # Gather codon usage of species small
-        expand("output/codon_usage/{species}/hbar_graph_{cds}.png",species=SPECIES_SMALL,cds=CSD_COMPARISON),
+        expand("output/codon_usage/{species}/aa_diff_hbar_{cds}.png",species=SPECIES_SMALL,cds=CSD_COMPARISON),
         # Gather GC content of all species
         expand("output/exon_gc/{species}/scatter_roll_avg_20_by_size.png", species=SPECIES_SMALL),
 
