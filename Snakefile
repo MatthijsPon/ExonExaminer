@@ -153,3 +153,17 @@ rule analyze_codon_usage:
     shell:
         "python3 scripts/codon_usage.py {input} {params.out_dir} {params.cds}"
 
+
+rule transcript_expression:
+    input:
+        gff="input/ENSEMBL/human.gff3",
+        trans_tpm="input/GTEx/transcript_tpm.gct.gz",
+        partner="input/GTEx/transcript_annotations.txt"
+    output:
+        "output/expression/scatterplot_low_usage.png",
+        "output/expression/scatterplot_high_usage.png"
+    params:
+        out_dir="output/expression/"
+    shell:
+        "python3 scripts/transcript_expression.py {input.gff} {input.trans_tpm} {input.partner} -o {params.out_dir}"
+
