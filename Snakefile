@@ -139,7 +139,7 @@ rule analyze_codon_usage:
         "output/codon_usage/{species}/hbar_graph_{cds1}_vs_{cds2}.png"
     params:
         out_dir="output/codon_usage/{species}/",
-        cds="{cds1}_vs{cds2}"
+        cds="{cds1}_vs_{cds2}"
     shell:
         "python3 scripts/codon_usage.py {input} {params.out_dir} {params.cds}"
 
