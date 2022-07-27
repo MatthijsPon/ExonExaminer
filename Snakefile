@@ -136,7 +136,9 @@ rule analyze_codon_usage:
         cds1="output/codon_usage/{species}/group_{cds1}.fa",
         cds2="output/codon_usage/{species}/group_{cds2}.fa",
     output:
-        "output/codon_usage/{species}/hbar_graph_{cds1}_vs_{cds2}.png"
+        "output/codon_usage/{species}/aa_diff_hbar_{cds1}_vs_{cds2}.png",
+        "output/codon_usage/{species}/codon_usage_hbar_{cds1}_vs_{cds2}.png"
+
     params:
         out_dir="output/codon_usage/{species}/",
         cds="{cds1}_vs_{cds2}"
