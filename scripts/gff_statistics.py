@@ -8,6 +8,7 @@ import os
 import pandas as pd
 from matplotlib import pyplot as plt
 import argparse as arg
+import seaborn as sns
 
 
 def parse_arguments():
@@ -39,7 +40,8 @@ def exon_len_histograms(exon_df, out_folder, fig_name, bins, title=None, max_hei
         title = fig_name
 
     # Create the plot and set name and axis titles
-    exon_df["size"].plot.hist(bins=bins, title=title)
+    plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 30})
+    sns.histplot(data=exon_df, x="size", bins=bins)
     plt.xlabel("Exon size (nt)")
     if max_height > 0:
         plt.ylim([0, max_height])
@@ -89,7 +91,8 @@ def main():
         output[item] = to_file
         # create histogram
         bins = [i for i in range(0, 40, 1)]
-        plt.hist(temp_data, bins=bins)
+        plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 30})
+        sns.histplot(data=temp_data, bins=bins)
         plt.xlabel("{}".format(option[item]))
         plt.ylabel("Count")
         plt.savefig("{}/histogram_{}.png".format(out_dir, option[item]))
@@ -102,9 +105,9 @@ def main():
             file.write("\n")
 
     # Exon length distribution for all types
-    bins = [i for i in range(0, 1000, 10)]
+    bins = [i for i in range(0, 1000, 1)]
     exon_len_histograms(gff.loc[gff["type"] == "exon"], out_dir, "histogram_exonlen_0-1000bp", bins)
-    bins = [i for i in range(1000, 20000, 10)]
+    bins = [i for i in range(1000, 20000, 1)]
     exon_len_histograms(gff.loc[gff["type"] == "exon"], out_dir, "histogram_exonlen_1000-20000bp", bins)
     # Exon length distribution per type
     name_dict = {
