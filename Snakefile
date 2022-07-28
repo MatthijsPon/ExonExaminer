@@ -83,7 +83,7 @@ rule calc_gc_exons:
     output:
         "output/exon_gc/{species}_gc_exons.bed"
     shell:
-        "bedtools nuc -fi {input.fa} -bed {input.bed} > {output} && rm {input.fa}"
+        "bedtools nuc -fi {input.fa} -bed {input.bed} > {output}"
 
 rule gc_exons_analysis:
     input:
