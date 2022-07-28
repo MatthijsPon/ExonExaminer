@@ -130,6 +130,9 @@ def main():
     fasta, pickle, out_dir = parse_arguments()
 
     exon_df = pd.read_pickle(pickle)
+    # Only take along internal exons
+    exon_df = exon_df.loc[(exon_df["three_prime"] == False) &
+                          (exon_df["five_prime"] == False)]
     with open(fasta) as file:
         fasta_dict = fasta_2_dict(file)
     print("Fasta converted")
