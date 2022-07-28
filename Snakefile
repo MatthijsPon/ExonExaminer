@@ -176,5 +176,6 @@ rule transcript_expression:
     params:
         out_dir="output/expression/human/"
     shell:
-        "python3 scripts/transcript_expression.py {input.gff} {input.trans_tpm} {input.partner} -o {params.out_dir}"
+        "python3 scripts/transcript_expression.py {input.gff} {input.trans_tpm} {input.partner} "
+        "{input.smaller_genes} {input.bigger_genes} -o {params.out_dir}"
 
