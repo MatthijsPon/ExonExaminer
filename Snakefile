@@ -49,7 +49,9 @@ rule exon_incorporation_script:
         quartiles="output/statistics/{species}/5_95_quartiles.txt"
     output:
         "output/exon_incorporation/{species}/cumulative_barplot.png",
-        "output/exon_incorporation/{species}/exon_incorporation_positive_borders.txt"
+        "output/exon_incorporation/{species}/exon_incorporation_positive_borders.txt",
+        "output/exon_incorporation/{species}/genes_ratio_smaller_0.csv",
+        "output/exon_incorporation/{species}/genes_ratio_bigger_0.csv",
     params:
         out_dir="output/exon_incorporation/{species}/",
     shell:
@@ -160,7 +162,9 @@ rule transcript_expression:
     input:
         gff="input/ENSEMBL/human.gff3",
         trans_tpm="input/GTEx/transcript_tpm.gct.gz",
-        partner="input/GTEx/transcript_annotations.txt"
+        partner="input/GTEx/transcript_annotations.txt",
+        smaller_genes="output/exon_incorporation/human/genes_ratio_smaller_0.csv",
+        bigger_genes="output/exon_incorporation/human/genes_ratio_bigger_0.csv"
     output:
         "output/expression/scatterplot_low_usage.png",
         "output/expression/scatterplot_high_usage.png"
