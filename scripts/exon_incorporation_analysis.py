@@ -47,8 +47,8 @@ def cumulative_barplot(data, x, y, filename):
     :return: None, files are created
     """
     # Get highest and lowest value of cumulative bar plot
-    low = int(data.loc[data[y] == data[y].min(), "size"])
-    high = int(data.loc[data[y] == data[y].max(), "size"])
+    low = int(data.loc[data[y] == data[y].min(), "size"].iloc[0])
+    high = int(data.loc[data[y] == data[y].max(), "size"].iloc[-1])
 
     plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8)})
     # Update axes
