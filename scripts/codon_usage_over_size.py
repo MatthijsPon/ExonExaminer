@@ -103,30 +103,15 @@ def determine_codon_usage(fasta_dict):
     return codons
 
 
-def codon_usage_df(codon_usage):
-    """Create a codon usage dataframe, combining codon usage and codon_aa_table()
-
-    :param codon_usage: dict, codon usage counts
-    :return: pandas dataframe object, codon usage dataframe including fractions
-    """
-    total = sum(codon_usage.values())
-
-    df = codon_aa_table()
-    df2 = pd.DataFrame(codon_usage, index=["count"])
-    df2 = df2.transpose(copy=False)
-    df2 = df2.reset_index()
-    df2 = df2.rename(columns={"index": "codon"})
-    df = df.merge(df2, how="left")
-    df = df.fillna(0.0)
-    df["fraction"] = df["count"] / total
-
-    return df
+def cu_2_fraction(dict):
+    total = sum(dict.values())
+    for key, value in dict.items():
+        dict[key] = value / total
+    return dict
 
 
 def amino_acid_usage(dict):
     """"""
-    total = sum(dict.values())
-
     df = codon_aa_table()
     df2 = pd.DataFrame(dict, index=["count"])
     df2 = df2.transpose(copy=False)
@@ -135,55 +120,9 @@ def amino_acid_usage(dict):
     df = df.merge(df2, how="left")
     df = df.groupby(["amino_acid", "aa_type"]).sum()
     df = df.reset_index()
-    df["fraction"] = df["count"] / total
-
+    df = df.rename(columns={"count": "fraction"})
+    df = df.set_index(["amino_acid", "aa_type"])
     return df
-
-
-def hbar_aa_usage(df, filename):
-    """"""
-    df = df[df.amino_acid != "*"]
-    df = df.sort_values(["amino_acid"])
-    aa_order = ["R", "H", "K", "D", "E", "S", "T", "N", "Q", "C", "P", "G",
-                "A", "V", "I", "L", "M", "F", "Y", "W"]
-    df.amino_acid = df.amino_acid.astype("category")
-    df.amino_acid = df.amino_acid.cat.set_categories(aa_order)
-    df = df.sort_values(["amino_acid"])
-    plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8), "legend.loc": "lower left"})
-    ax = sns.barplot(x="diff_perc", y="amino_acid", data=df, hue="aa_type", dodge=False)
-    plt.xlim(-35, 35)
-    plt.xlabel("Difference in amino acid usage (%)")
-    plt.ylabel("Amino acid")
-    plt.legend(title="Amino acid side chain type")
-    plt.savefig(filename)
-    plt.close()
-    return None
-
-
-def hbar_codon_usage(df, filename):
-    """Create a horizontal codon usage bar graph, coloured on AA type
-
-    :param df: pandas dataframe object, containing data to graph
-    :param filename: str, output filename
-    :return: None, figures are created.
-    """
-    aa_order = ["R", "H", "K", "D", "E", "S", "T", "N", "Q", "C", "P", "G",
-                "A", "V", "I", "L", "M", "F", "Y", "W", "*"]
-    df.amino_acid = df.amino_acid.astype("category")
-    df.amino_acid = df.amino_acid.cat.set_categories(aa_order)
-    df = df.sort_values(["amino_acid"])
-    plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8), "legend.loc": "lower left"})
-    ax = sns.barplot(x="diff_frac", y="codon", data=df, hue="aa_type", dodge=False)
-    plt.savefig(filename)
-    plt.close()
-    return None
-
-
-def cu_2_fraction(dict):
-    total = sum(dict.values())
-    for key, value in dict.items():
-        dict[key] = value / total
-    return dict
 
 
 def main():
@@ -197,42 +136,59 @@ def main():
 
     step = 25
     usage_dict = {}
+    aa_dfs = []
     for i in range(0, 2000, step):
-        print("Range: {} to {}".format(i, i + 25))
+        print("Range: {} to {}".format(i, i + step))
         yf_exons = list(exon_df.loc[(exon_df["size"] >= i) & (exon_df["size"] < i + step), "id"])
         yf_fasta = {k: fasta_dict[k] for k in fasta_dict.keys() & yf_exons}
         yf_cu = determine_codon_usage(yf_fasta)
         usage_dict[i] = cu_2_fraction(yf_cu)
-    usage_df = pd.DataFrame(usage_dict)
-    usage_df = usage_df.transpose()
-    usage_df = usage_df.reset_index()
-    print(usage_df.head())
+        aa_df_temp = amino_acid_usage(yf_cu)
+        aa_df_temp = aa_df_temp.rename(columns={"fraction": i})
+        aa_dfs.append(aa_df_temp)
 
-    # TODO this is chaotic, fix or only look at amino acids
+    # Ignore codon usage, as it is too cluttered.
+    # usage_df = pd.DataFrame(usage_dict)
+    # usage_df = usage_df.transpose()
+    # usage_df = usage_df.reset_index()
+    #
+    # plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 30})
+    # sns.lineplot(x="index", y="value", data=pd.melt(usage_df, ["index"]), hue="variable")
+    # plt.setp(plt.legend().get_texts(), fontsize='20')  # Set legend font size
+    # plt.title("All codons")
+    # plt.xlabel("Exon size ({} nt wide buckets)".format(step))
+    # plt.ylabel("Codon usage (fraction)")
+    # plt.savefig("{}/codons_over_size_all_types.png".format(out_dir))
+    # plt.close()
 
-    sns.lineplot(x="index", y="value", data=pd.melt(usage_df, ["index"]), hue="variable")
-    plt.show()
-    raise ValueError
+    aa_df = pd.concat(aa_dfs, axis=1)
+    aa_df = aa_df.drop("*")
+    # Plot each amino acid type separately
+    for idx, group in aa_df.groupby("aa_type"):
+        group = group.transpose()
+        group = group.reset_index()
+        plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 30})
+        sns.lineplot(x="index", y="value", data=pd.melt(group, ["index"]), hue="amino_acid")
+        plt.title(idx)
+        plt.setp(plt.legend().get_texts(), fontsize='20')  # Set legend font size
 
+        plt.xlabel("Exon size ({} nt wide buckets)".format(step))
+        plt.ylabel("Amino acid usage (fraction)")
+        plt.savefig("{}/aa_over_size_{}.png".format(out_dir, idx))
+        plt.close()
 
+    aa_df = aa_df.transpose()
+    aa_df = aa_df.reset_index()
+    # Plot all amino acid types together
+    plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 30})
+    sns.lineplot(x="index", y="value", data=pd.melt(aa_df, ["index"]), hue="amino_acid")
+    plt.setp(plt.legend().get_texts(), fontsize='20')  # Set legend font size
 
-
-    # Amino acid usage
-    au_df1 = amino_acid_usage(cu_dict1)
-    au_df2 = amino_acid_usage(cu_dict2)
-    au_df = pd.merge(au_df1, au_df2, on=["amino_acid", "aa_type"], how="inner")
-    au_df["diff_frac"] = au_df["fraction_x"] - au_df["fraction_y"]
-    au_df["diff_perc"] = (au_df["fraction_x"] - au_df["fraction_y"]) / au_df["fraction_x"] * 100
-    hbar_aa_usage(au_df, "{}aa_diff_hbar_{}.png".format(out_dir, group))
-
-    # Codon usage
-    cu_df1 = codon_usage_df(cu_dict1)
-    cu_df2 = codon_usage_df(cu_dict2)
-    cu_df = pd.merge(cu_df1, cu_df2, on=["codon", "amino_acid", "aa_type"], how="inner")
-    cu_df["diff_frac"] = cu_df["fraction_x"] - cu_df["fraction_y"]
-
-    hbar_codon_usage(cu_df, "{}codon_usage_hbar_{}.png".format(out_dir, group))
-
+    plt.title("All types")
+    plt.xlabel("Exon size ({} nt wide buckets)".format(step))
+    plt.ylabel("Amino acid usage (fraction)")
+    plt.savefig("{}/aa_over_size_all_types.png".format(out_dir))
+    plt.close()
     return None
 
 
