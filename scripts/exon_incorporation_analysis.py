@@ -125,9 +125,9 @@ def main():
 
     # Output genes which have a higher and lower incorporation ratio than 0
     # for further analysis in the expression script
-    ratio_higher = results.loc[results["ratio"] >= 0, "id"]
+    ratio_higher = results.loc[results["ratio"] > 0, "id"]
     ratio_lower = results.loc[results["ratio"] < 0, "id"]
-    with open("{}/genes_ratio_biggerequal_0.csv".format(out_dir), "w+") as outfile:
+    with open("{}/genes_ratio_bigger_0.csv".format(out_dir), "w+") as outfile:
         outfile.write(",".join(ratio_higher))
     with open("{}/genes_ratio_smaller_0.csv".format(out_dir), "w+") as outfile:
         outfile.write(",".join(ratio_lower))
