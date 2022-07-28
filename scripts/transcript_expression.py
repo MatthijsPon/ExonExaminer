@@ -4,12 +4,11 @@ Author: Matthijs Pon
 Description:
 """
 import argparse as arg
-import math
 import os
-import time
 import pandas as pd
 import gzip
 import statistics as stats
+import seaborn as sns
 from matplotlib import pyplot as plt
 
 from helpers import get_internal_exons, yield_single_gene, determine_target_exon
@@ -29,11 +28,16 @@ def parse_arg():
                         help="GTEx transcript expression file")
     parser.add_argument("expression_companion", type=str,
                         help="GTEx transcript expression companion file, describing sampleIDs and tissues")
-    parser.add_argument("-c", "--complexity", default=1, type=int, choices=[0, 1, 2],
-                        help="determine the tissue depth (0: None (avg. exp per gene, 1: general tissue (e.g. brain), "
+    parser.add_argument("smaller_genes", type=str,
+                        help="csv file describing genes with a relative exon incorporation lower than 0")
+    parser.add_argument("bigger_genes", type=str,
+                        help="csv file describing genes with a relative exon incorporation higher than 0")
+    parser.add_argument("-c", "--complexity", default=0, type=int, choices=[0, 1, 2],
+                        help="determine the tissue depth (0: None (avg. exp per gene), 1: general tissue (e.g. brain), "
                              "2: specific tissue (e.g. brian - frontal cortex)")
     args = parser.parse_args()
-    return args.gff3_file, args.expression_file, args.expression_companion, args.out, args.complexity
+    return args.gff3_file, args.expression_file, args.expression_companion, args.smaller_genes, args.bigger_genes,\
+           args.out, args.complexity
 
 
 def create_averaged_expression(exp_file, exp_comp, out_dir, complexity=1):
@@ -185,7 +189,7 @@ def ratio_expression_exon(gene_df, expression_df, target_exon=None):
     if total_all == 0.0:  # If there is no expression measured at all, discard the ratio
         return None, None
     if len(total_exp_target) == 0:
-        # Add 4 to exit code (target transcript was not measured)
+        # Add 4 to exit code (target transcripts were not measured)
         exit_code += 4
         total_target = 0.0
     else:
@@ -226,37 +230,7 @@ def determine_error_code(error_code):
     return errors
 
 
-def create_full_scatterplot(data, out_dir, complexity):
-    """Create a scatterplot of all the data
-
-    :param data: pandas dataframe, containing data to plot
-    :param out_dir: str, output directory
-    :param complexity: int, complexity used for data creation
-    :return: None, figures are created and written to disk
-    """
-    plt.rcParams.update({"font.size": 20, "figure.figsize": (30, 20)})
-    data.plot(x="size", y="ratio", style="o")
-    plt.savefig("{}full_scatterplot_complexity{}.png".format(out_dir, complexity))
-    plt.close()
-
-
-def create_zoom_scatterplot(data, out_dir, complexity):
-    """Create a zoom in of the full scatterplot
-
-    :param data: pandas dataframe, containing data to plot
-    :param out_dir: str, output directory
-    :param complexity: int, complexity used for data creation
-    :return: None, figures are created and written to disk
-    """
-    plt.rcParams.update({"font.size": 20, "figure.figsize": (30, 20)})
-    data = data.loc[(data["size"] >= 500) & (data["size"] <= 10000)]  # Select certain sizes
-    data = data.loc[data["ratio"] <= 4]
-    data.plot(x="size", y="ratio", style="o")
-    plt.savefig("{}full_zoom_scatterplot_complexity{}.png".format(out_dir, complexity))
-    plt.close()
-
-
-def coloured_scatterplot(data, x, y, colour, out_dir, fig_name, colour_subgroups=False, x_max=None):
+def sns_scatterplot(data, x, y, colour, out_dir, fig_name, x_max):
     """Create scatter plots coloured on error code.
 
     :param data: pandas dataframe object, data to plot
@@ -269,23 +243,11 @@ def coloured_scatterplot(data, x, y, colour, out_dir, fig_name, colour_subgroups
     :param x_max: int, max x value to plot
     :return: None, files are created
     """
-    plt.rcParams.update({"figure.figsize": (19.2, 16.8)})
-    if not colour_subgroups:
-        plt.scatter(x=data[x], y=data[y], s=3, c=colour)
-    else:
-        plt.scatter(x=data.loc[data["error"] >= 16, x],
-                    y=data.loc[data["error"] >= 16, y], s=3, c="Black", label="Single exon genes")
-        plt.scatter(x=data.loc[(data["error"] > 0) & (data["error"] <= 4), x],
-                    y=data.loc[(data["error"] > 0) & (data["error"] <= 4), y],
-                    s=3, c="Green", label="At least one transcript not measured")
-        plt.scatter(x=data.loc[data["error"] == 0, x],
-                    y=data.loc[data["error"] == 0, y], s=3, c=colour, label="Multiple transcripts, multiple exons")
-        plt.legend()
-    if not x_max:
-        plt.xlim(left=-250)
-    else:
-        plt.xlim(left=-250, right=x_max)
-    plt.ylim(bottom=-0.5, top=8)
+    plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 20})
+    sns.scatterplot(data=data, x=x, y=y, s=10, color=colour)
+    plt.xlim(0, x_max)
+    plt.ylim(0.1, 10)
+    plt.yscale("log")
     plt.savefig("{}/{}.png".format(out_dir, fig_name))
     plt.close()
     return None
@@ -302,70 +264,77 @@ def color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_gen
     """
     # Exon usage ratio < 0
     data_low = data.loc[data["id"].isin(smaller_genes)]
-    coloured_scatterplot(data_low, "size", "ratio", "Blue", out_dir,
-                         "scatterplot_low_usage")
-    coloured_scatterplot(data_low, "size", "ratio", "Blue", out_dir,
-                         "scatterplot_low_usage_colour", colour_subgroups=True)
-    coloured_scatterplot(data_low, "size", "ratio", "Blue", out_dir,
-                         "scatterplot_low_usage_colour_zoom", colour_subgroups=True, x_max=5000)
+
+    # Only take expression data with no error code
+    data_low_sub = data_low.loc[data_low["error"] == 0]
+    sns_scatterplot(data_low_sub, "size", "ratio", "Blue", out_dir,
+                    "scatterplot_low_usage", x_max=5000)
+
+    # Mean expression per size
+    low_mean = data_low.groupby("size").mean()
+    sns_scatterplot(low_mean, "size", "ratio", "Blue", out_dir,
+                    "scatterplot_low_usage_avg_size", x_max=5000)
 
     # Exon usage ratio >= 0
     data_high = data.loc[data["id"].isin(bigger_genes)]
-    coloured_scatterplot(data_high, "size", "ratio", "Red", out_dir,
-                         "scatterplot_high_usage")
-    coloured_scatterplot(data_high, "size", "ratio", "Red", out_dir,
-                         "scatterplot_high_usage_colour", colour_subgroups=True)
-    coloured_scatterplot(data_high, "size", "ratio", "Red", out_dir,
-                         "scatterplot_high_usage_colour_zoom", colour_subgroups=True, x_max=5000)
+
+    # Only take expression data with no error code
+    data_high_sub = data_high.loc[data_high["error"] == 0]
+    sns_scatterplot(data_high_sub, "size", "ratio", "Red", out_dir,
+                    "scatterplot_high_usage", x_max=5000)
+
+    # Mean expression per size
+    high_mean = data_high.groupby("size").mean()
+    sns_scatterplot(high_mean, "size", "ratio", "Red", out_dir,
+                    "scatterplot_high_usage_avg_size", x_max=5000)
+
+
     return None
+
+
+def create_expression_df(gff, exp, exp_comp, out_dir, complexity):
+    """Create an expression dataframe.
+
+    :param gff: str, gff3 file path
+    :param exp: str, expression file path
+    :param exp_comp: str, expression companion file path
+    :param out_dir: str, output directory
+    :param complexity: int, [0, 1 or 2], complexity of the tissue (e.g. 1 - brain; 2 - brain, frontal cortext)
+    :return: pandas dataframe, expression dataframe
+    """
+    expression_df = acquire_expression_dataframe(exp, exp_comp, out_dir, complexity)
+    data = {
+        "id": [],
+        "size": [],
+        "ratio": [],
+        "error": []
+    }
+    with open(gff) as file:
+        for gene_df in yield_single_gene(file):
+            # For each gene determine the expression ratio
+            internal_exons = get_internal_exons(gene_df)
+            if internal_exons is None:
+                continue  # If there are no internal exons, skip the gene
+            for exon in internal_exons:
+                ratio, error_code = ratio_expression_exon(gene_df, expression_df, target_exon=exon)
+                if ratio:
+                    data["id"].append(exon)  # Number of transcripts in gene
+                    data["size"].append(gene_df.loc[gene_df["id"] == exon, "size"].iloc[0])
+                    data["ratio"].append(ratio)  # Ratio expression largest exon / total expression
+                    data["error"].append(error_code)
+                else:  # If there is no ratio, skip the exon
+                    continue
+    return pd.DataFrame(data)
 
 
 def main():
     """Main function"""
     # Parse arguments
-    gff, exp, exp_comp, out_dir, complexity = parse_arg()
-    if not os.path.exists("./data/temp/expression.pickle"):
-        # Get expression dataframe
-        expression_df = acquire_expression_dataframe(exp, exp_comp, out_dir, complexity)
-        data = {
-            "id": [],
-            "size": [],
-            "ratio": [],
-            "error": []
-        }
-        with open(gff) as file:
-            for gene_df in yield_single_gene(file):
-                # For each gene determine the expression ratio
-                internal_exons = get_internal_exons(gene_df)
-                if internal_exons is None:
-                    continue  # If there are no internal exons, skip the gene
-                for exon in internal_exons:
-                    ratio, error_code = ratio_expression_exon(gene_df, expression_df, target_exon=exon)
-                    if ratio:
-                        data["id"].append(exon)  # Number of transcripts in gene
-                        data["size"].append(gene_df.loc[gene_df["id"] == exon, "size"].iloc[0])
-                        data["ratio"].append(ratio)  # Ratio expression largest exon / total expression
-                        data["error"].append(error_code)
-                    else:  # If there is no ratio, skip the exon
-                        continue
-        data = pd.DataFrame(data)
-        data.to_pickle("./data/temp/expression.pickle")
-    else:
-        data = pd.read_pickle("./data/temp/expression.pickle")
-
-    create_full_scatterplot(data, out_dir, complexity)
-    create_zoom_scatterplot(data, out_dir, complexity)
+    gff, exp, exp_comp, smaller_genes, bigger_genes, out_dir, complexity = parse_arg()
+    data = create_expression_df(gff, exp, exp_comp, out_dir, complexity)
 
     # Create scatterplot coloured on exon incorporation
-    if os.path.exists("./data/out/transcript_ratio/genes_ratio_biggerequal_0.csv") and \
-            os.path.exists("./data/out/transcript_ratio/genes_ratio_smaller_0.csv"):
-        with open("./data/out/transcript_ratio/genes_ratio_biggerequal_0.csv") as file:
-            bigger_genes = file.read().strip().split(",")
-        with open("./data/out/transcript_ratio/genes_ratio_smaller_0.csv") as file:
-            smaller_genes = file.read().strip().split(",")
-        color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_genes)
-
-    # TODO Create boxplots
+    color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_genes)
     return None
 
 
