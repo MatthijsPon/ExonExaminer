@@ -13,6 +13,8 @@ rule all:
         expand("output/codon_usage/{species}/aa_diff_hbar_{cds}.png",species=SPECIES_SMALL,cds=CSD_COMPARISON),
         # Gather GC content of all species
         expand("output/exon_gc/{species}/scatter_roll_avg_20_by_size.png", species=SPECIES_SMALL),
+        # Get Expression data for human
+        "output/expression/human/scatterplot_low_usage.png",
 
 
 rule parse_gff3:
@@ -166,10 +168,10 @@ rule transcript_expression:
         smaller_genes="output/exon_incorporation/human/genes_ratio_smaller_0.csv",
         bigger_genes="output/exon_incorporation/human/genes_ratio_bigger_0.csv"
     output:
-        "output/expression/scatterplot_low_usage.png",
-        "output/expression/scatterplot_high_usage.png"
+        "output/expression/human/scatterplot_low_usage.png",
+        "output/expression/human/scatterplot_high_usage.png"
     params:
-        out_dir="output/expression/"
+        out_dir="output/expression/human/"
     shell:
         "python3 scripts/transcript_expression.py {input.gff} {input.trans_tpm} {input.partner} -o {params.out_dir}"
 
