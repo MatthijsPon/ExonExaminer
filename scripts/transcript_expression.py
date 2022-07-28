@@ -243,11 +243,13 @@ def sns_scatterplot(data, x, y, colour, out_dir, fig_name, x_max):
     :param x_max: int, max x value to plot
     :return: None, files are created
     """
-    plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 20})
+    plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 30})
     sns.scatterplot(data=data, x=x, y=y, s=10, color=colour)
     plt.xlim(0, x_max)
-    plt.ylim(0.1, 10)
+    plt.ylim(0.5, 15)
     plt.yscale("log")
+    plt.xlabel("Exon size (nt)")
+    plt.ylabel("Relative expression")
     plt.savefig("{}/{}.png".format(out_dir, fig_name))
     plt.close()
     return None
@@ -268,12 +270,12 @@ def color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_gen
     # Only take expression data with no error code
     data_low_sub = data_low.loc[data_low["error"] == 0]
     sns_scatterplot(data_low_sub, "size", "ratio", "Blue", out_dir,
-                    "scatterplot_low_usage", x_max=5000)
+                    "scatterplot_low_usage", x_max=2000)
 
     # Mean expression per size
     low_mean = data_low.groupby("size").mean()
     sns_scatterplot(low_mean, "size", "ratio", "Blue", out_dir,
-                    "scatterplot_low_usage_avg_size", x_max=5000)
+                    "scatterplot_low_usage_avg_size", x_max=2000)
 
     # Exon usage ratio >= 0
     data_high = data.loc[data["id"].isin(bigger_genes)]
@@ -281,12 +283,12 @@ def color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_gen
     # Only take expression data with no error code
     data_high_sub = data_high.loc[data_high["error"] == 0]
     sns_scatterplot(data_high_sub, "size", "ratio", "Red", out_dir,
-                    "scatterplot_high_usage", x_max=5000)
+                    "scatterplot_high_usage", x_max=2000)
 
     # Mean expression per size
     high_mean = data_high.groupby("size").mean()
     sns_scatterplot(high_mean, "size", "ratio", "Red", out_dir,
-                    "scatterplot_high_usage_avg_size", x_max=5000)
+                    "scatterplot_high_usage_avg_size", x_max=2000)
 
 
     return None
