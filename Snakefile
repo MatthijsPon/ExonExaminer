@@ -11,6 +11,7 @@ rule all:
         expand("output/exon_incorporation/{species}/cumulative_barplot.png", species=SPECIES),
         # Gather codon usage of species small
         expand("output/codon_usage/{species}/aa_diff_hbar_{cds}.png",species=SPECIES_SMALL,cds=CSD_COMPARISON),
+        expand("output/codon_usage/{species}/aa_over_size_all_types.png", species=SPECIES_SMALL),
         # Gather GC content of all species
         expand("output/exon_gc/{species}/scatter_roll_avg_20_by_size.png", species=SPECIES_SMALL),
         # Get Expression data for human
@@ -128,13 +129,15 @@ rule rename_cds_fasta:
 
 rule codon_usage_over_size:
     input:
-        "output/codon_usage/{species}_cds_seq_renamed.fa"
+        fa="output/codon_usage/{species}_cds_seq_renamed.fa",
+        pickle="output/parsed_gff/{species}.pickle"
     output:
-        "output/codon_usage/{species}/line_cu_over_size.png"
+        "output/codon_usage/{species}/aa_over_size_all_types.png"
     params:
         outdir="output/codon_usage/{species}/"
     shell:
-        "python3 scripts/codon_usage_over_size.py {input} {params.outdir}"
+        "python3 scripts/codon_usage_over_size.py {input.fa} {input.pickle} {params.outdir}"
+
 
 rule cds_divide_into_groups:
     input:
