@@ -294,6 +294,10 @@ def color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_gen
     return None
 
 
+if __name__ == '__main__':
+    main()
+
+
 def create_expression_df(gff, exp, exp_comp, out_dir, complexity):
     """Create an expression dataframe.
 
@@ -329,16 +333,20 @@ def create_expression_df(gff, exp, exp_comp, out_dir, complexity):
     return pd.DataFrame(data)
 
 
+
+
 def main():
     """Main function"""
     # Parse arguments
-    gff, exp, exp_comp, smaller_genes, bigger_genes, out_dir, complexity = parse_arg()
+    gff, exp, exp_comp, small_gen_file, big_gen_file, out_dir, complexity = parse_arg()
     data = create_expression_df(gff, exp, exp_comp, out_dir, complexity)
+
+    # Read in exon incorporation separated genes
+    with open(big_gen_file) as file:
+        bigger_genes = file.read().strip().split(",")
+    with open(small_gen_file) as file:
+        smaller_genes = file.read().strip().split(",")
 
     # Create scatterplot coloured on exon incorporation
     color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_genes)
     return None
-
-
-if __name__ == '__main__':
-    main()
