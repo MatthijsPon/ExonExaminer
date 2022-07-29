@@ -135,13 +135,11 @@ def main():
                           (exon_df["five_prime"] == False)]
     with open(fasta) as file:
         fasta_dict = fasta_2_dict(file)
-    print("Fasta converted")
 
     step = 25
     usage_dict = {}
     aa_dfs = []
     for i in range(0, 2000, step):
-        print("Range: {} to {}".format(i, i + step))
         yf_exons = list(exon_df.loc[(exon_df["size"] >= i) & (exon_df["size"] < i + step), "id"])
         yf_fasta = {k: fasta_dict[k] for k in fasta_dict.keys() & yf_exons}
         yf_cu = determine_codon_usage(yf_fasta)
