@@ -294,10 +294,6 @@ def color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_gen
     return None
 
 
-if __name__ == '__main__':
-    main()
-
-
 def create_expression_df(gff, exp, exp_comp, out_dir, complexity):
     """Create an expression dataframe.
 
@@ -350,3 +346,7 @@ def main():
     # Create scatterplot coloured on exon incorporation
     color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_genes)
     return None
+
+
+if __name__ == '__main__':
+    main()
