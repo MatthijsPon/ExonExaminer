@@ -111,6 +111,7 @@ def create_comp0_averaged_expression(exp_file, out_dir):
                                                  "".format(out_dir), "w+") as out_f:
         count = 0
         for line in file:
+            # First 2 lines are file information, 3rd line is column information
             if count < 3:
                 count += 1
                 if count == 3:
@@ -246,7 +247,7 @@ def sns_scatterplot(data, x, y, colour, out_dir, fig_name, x_max):
     plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 30})
     sns.scatterplot(data=data, x=x, y=y, s=10, color=colour)
     plt.xlim(0, x_max)
-    plt.ylim(0.5, 15)
+    plt.ylim(0.05, 15)
     plt.yscale("log")
     plt.xlabel("Exon size (nt)")
     plt.ylabel("Relative expression")
