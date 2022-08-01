@@ -276,7 +276,7 @@ def color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_gen
     # Mean expression per size
     low_mean = data_low.groupby("size").mean()
     sns_scatterplot(low_mean, "size", "ratio", "Blue", out_dir,
-                    "scatterplot_low_usage_avg_size", x_max=2000, s=20)
+                    "scatterplot_low_usage_avg_size", x_max=2000, s=30)
 
     # Exon usage ratio >= 0
     data_high = data.loc[data["id"].isin(bigger_genes)]
