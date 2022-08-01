@@ -36,7 +36,7 @@ def parse_arg():
                         help="determine the tissue depth (0: None (avg. exp per gene), 1: general tissue (e.g. brain), "
                              "2: specific tissue (e.g. brian - frontal cortex)")
     args = parser.parse_args()
-    return args.gff3_file, args.expression_file, args.expression_companion, args.smaller_genes, args.bigger_genes,\
+    return args.gff3_file, args.expression_file, args.expression_companion, args.smaller_genes, args.bigger_genes, \
            args.out, args.complexity
 
 
@@ -231,7 +231,7 @@ def determine_error_code(error_code):
     return errors
 
 
-def sns_scatterplot(data, x, y, colour, out_dir, fig_name, x_max):
+def sns_scatterplot(data, x, y, colour, out_dir, fig_name, x_max, s):
     """Create scatter plots coloured on error code.
 
     :param data: pandas dataframe object, data to plot
@@ -245,7 +245,7 @@ def sns_scatterplot(data, x, y, colour, out_dir, fig_name, x_max):
     :return: None, files are created
     """
     plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 30})
-    sns.scatterplot(data=data, x=x, y=y, s=10, color=colour)
+    sns.scatterplot(data=data, x=x, y=y, s=s, color=colour)
     plt.xlim(0, x_max)
     plt.ylim(0.05, 15)
     plt.yscale("log")
@@ -271,12 +271,12 @@ def color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_gen
     # Only take expression data with no error code
     data_low_sub = data_low.loc[data_low["error"] == 0]
     sns_scatterplot(data_low_sub, "size", "ratio", "Blue", out_dir,
-                    "scatterplot_low_usage", x_max=2000)
+                    "scatterplot_low_usage", x_max=2000, s=10)
 
     # Mean expression per size
     low_mean = data_low.groupby("size").mean()
     sns_scatterplot(low_mean, "size", "ratio", "Blue", out_dir,
-                    "scatterplot_low_usage_avg_size", x_max=2000)
+                    "scatterplot_low_usage_avg_size", x_max=2000, s=20)
 
     # Exon usage ratio >= 0
     data_high = data.loc[data["id"].isin(bigger_genes)]
@@ -284,13 +284,12 @@ def color_scatterplot_exonincorporation(data, out_dir, bigger_genes, smaller_gen
     # Only take expression data with no error code
     data_high_sub = data_high.loc[data_high["error"] == 0]
     sns_scatterplot(data_high_sub, "size", "ratio", "Red", out_dir,
-                    "scatterplot_high_usage", x_max=2000)
+                    "scatterplot_high_usage", x_max=2000, s=10)
 
     # Mean expression per size
     high_mean = data_high.groupby("size").mean()
     sns_scatterplot(high_mean, "size", "ratio", "Red", out_dir,
-                    "scatterplot_high_usage_avg_size", x_max=2000)
-
+                    "scatterplot_high_usage_avg_size", x_max=2000, s=30)
 
     return None
 
@@ -328,8 +327,6 @@ def create_expression_df(gff, exp, exp_comp, out_dir, complexity):
                 else:  # If there is no ratio, skip the exon
                     continue
     return pd.DataFrame(data)
-
-
 
 
 def main():
