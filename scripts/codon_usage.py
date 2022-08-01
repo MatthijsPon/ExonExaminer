@@ -181,15 +181,15 @@ def main():
     au_df1 = amino_acid_usage(cu_dict1)
     au_df2 = amino_acid_usage(cu_dict2)
     au_df = pd.merge(au_df1, au_df2, on=["amino_acid", "aa_type"], how="inner")
-    au_df["diff_frac"] = au_df["fraction_x"] - au_df["fraction_y"]
-    au_df["diff_perc"] = (au_df["fraction_x"] - au_df["fraction_y"]) / au_df["fraction_x"] * 100
+    au_df["diff_frac"] = au_df["fraction_y"] - au_df["fraction_x"]
+    au_df["diff_perc"] = (au_df["fraction_y"] - au_df["fraction_x"]) / au_df["fraction_x"] * 100
     hbar_aa_usage(au_df, "{}aa_diff_hbar_{}.png".format(out_dir, group))
 
     # Codon usage
     cu_df1 = codon_usage_df(cu_dict1)
     cu_df2 = codon_usage_df(cu_dict2)
     cu_df = pd.merge(cu_df1, cu_df2, on=["codon", "amino_acid", "aa_type"], how="inner")
-    cu_df["diff_frac"] = cu_df["fraction_x"] - cu_df["fraction_y"]
+    cu_df["diff_frac"] = cu_df["fraction_y"] - cu_df["fraction_x"]
 
     hbar_codon_usage(cu_df, "{}codon_usage_hbar_{}.png".format(out_dir, group))
 
