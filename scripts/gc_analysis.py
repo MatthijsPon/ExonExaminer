@@ -100,7 +100,7 @@ def scatterplot_roll_avg(data, x, y, window, out_file,
     data['MA_group'] = data[y].rolling(window=window).mean()
     plt.plot(data[x], data["MA_group"], color="r", label="Rolling average of {} data points".format(window))
 
-    plt.xlabel("Exon size (nt)")
+    plt.xlabel("Exon length (nt)")
     plt.ylabel("Average GC content (%)")
     plt.legend()
     plt.savefig(out_file)

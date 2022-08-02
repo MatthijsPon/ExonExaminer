@@ -42,7 +42,7 @@ def exon_len_histograms(exon_df, out_folder, fig_name, bins, title=None, max_hei
     # Create the plot and set name and axis titles
     plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 30})
     sns.histplot(data=exon_df, x="size", bins=bins)
-    plt.xlabel("Exon size (nt)")
+    plt.xlabel("Exon length (nt)")
     if max_height > 0:
         plt.ylim([0, max_height])
 

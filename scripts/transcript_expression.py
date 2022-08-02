@@ -249,7 +249,7 @@ def sns_scatterplot(data, x, y, colour, out_dir, fig_name, x_max, s):
     plt.xlim(0, x_max)
     plt.ylim(0.05, 15)
     plt.yscale("log")
-    plt.xlabel("Exon size (nt)")
+    plt.xlabel("Exon length (nt)")
     plt.ylabel("Relative expression")
     plt.savefig("{}/{}.png".format(out_dir, fig_name))
     plt.close()

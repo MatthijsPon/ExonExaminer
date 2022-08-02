@@ -173,7 +173,7 @@ def main():
         plt.title(idx)
         plt.setp(plt.legend().get_texts(), fontsize='20')  # Set legend font size
 
-        plt.xlabel("Exon size ({} nt wide buckets)".format(step))
+        plt.xlabel("Exon length ({} nt wide buckets)".format(step))
         plt.ylabel("Amino acid usage (fraction)")
         plt.savefig("{}/aa_over_size_{}.png".format(out_dir, idx))
         plt.close()
@@ -186,7 +186,7 @@ def main():
     plt.setp(plt.legend().get_texts(), fontsize='20')  # Set legend font size
 
     plt.title("All types")
-    plt.xlabel("Exon size ({} nt wide buckets)".format(step))
+    plt.xlabel("Exon length ({} nt wide buckets)".format(step))
     plt.ylabel("Amino acid usage (fraction)")
     plt.savefig("{}/aa_over_size_all_types.png".format(out_dir))
     plt.close()
