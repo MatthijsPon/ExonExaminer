@@ -240,8 +240,8 @@ def sns_scatterplot(data, x, y, colour, out_dir, fig_name, x_max, s):
     :param colour: str, colour to paint the non-error points
     :param out_dir: str, output directory
     :param fig_name: str, figure name
-    :param colour_subgroups: bool, if true, error codes will have different values
     :param x_max: int, max x value to plot
+    :param s: int, point size
     :return: None, files are created
     """
     plt.rcParams.update({"figure.figsize": (19.2, 16.8), "font.size": 30})
