@@ -83,7 +83,7 @@ def fasta_2_dict(file):
 def determine_codon_usage(fasta_dict):
     """Determine the usage of codons from all sequences in a fasta file
 
-    :param file: iterable, open fasta file object
+    :param fasta_dict: dict, parsed fasta file, id: sequence (str: str)
     :return: dict, str: int, codon: count
     """
     codons = {}
@@ -103,17 +103,17 @@ def determine_codon_usage(fasta_dict):
     return codons
 
 
-def cu_2_fraction(dict):
-    total = sum(dict.values())
-    for key, value in dict.items():
-        dict[key] = value / total
-    return dict
+def cu_2_fraction(cu_dict):
+    total = sum(cu_dict.values())
+    for key, value in cu_dict.items():
+        cu_dict[key] = value / total
+    return cu_dict
 
 
-def amino_acid_usage(dict):
+def amino_acid_usage(aa_dict):
     """"""
     df = codon_aa_table()
-    df2 = pd.DataFrame(dict, index=["count"])
+    df2 = pd.DataFrame(aa_dict, index=["count"])
     df2 = df2.transpose(copy=False)
     df2 = df2.reset_index()
     df2 = df2.rename(columns={"index": "codon"})
