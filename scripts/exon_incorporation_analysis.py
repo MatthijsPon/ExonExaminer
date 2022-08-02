@@ -4,15 +4,12 @@ Author: Matthijs Pon
 Description: This script parses an ENSEMBL gff3 file and determines the average
              inclusion of exons compared to their length.
 """
-import math
 
-from helpers import get_internal_exons, yield_single_gene, determine_target_exon
 from matplotlib import pyplot as plt
 
 import os
 import argparse as arg
 import pandas as pd
-import scipy.stats as stats
 import statistics
 import seaborn as sns
 
@@ -132,7 +129,6 @@ def main():
     with open("{}/genes_ratio_smaller_0.csv".format(out_dir), "w+") as outfile:
         outfile.write(",".join(ratio_lower))
 
-
     data = {
         "size": [],
         "sum_smaller": [],
@@ -188,5 +184,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
