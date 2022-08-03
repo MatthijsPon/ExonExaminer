@@ -26,7 +26,7 @@ rule parse_gff3:
     shell:
         "python3 scripts/parse_gff3.py {input} {output}"
 
-rule gff_statistics:
+rule gff_features:
     input:
         "output/parsed_gff/{species}.pickle"
     output:
@@ -35,7 +35,7 @@ rule gff_statistics:
     params:
         out_dir="output/statistics/{species}/"
     shell:
-        "python3 scripts/gff_statistics.py {input} {params.out_dir}"
+        "python3 scripts/gff_features.py {input} {params.out_dir}"
 
 
 rule exon_incorporation_pickle:
