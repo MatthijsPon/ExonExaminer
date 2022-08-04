@@ -112,12 +112,16 @@ def codon_usage_df(codon_usage):
     return df
 
 
-def amino_acid_usage(dict):
-    """"""
-    total = sum(dict.values())
+def amino_acid_usage(cu_dict):
+    """Calculate amino acid usage.
+
+    :param cu_dict: dict, codon usage dictionary
+    :return: amino acids usage dataframe
+    """
+    total = sum(cu_dict.values())
 
     df = codon_aa_table()
-    df2 = pd.DataFrame(dict, index=["count"])
+    df2 = pd.DataFrame(cu_dict, index=["count"])
     df2 = df2.transpose(copy=False)
     df2 = df2.reset_index()
     df2 = df2.rename(columns={"index": "codon"})
@@ -138,9 +142,9 @@ def hbar_aa_usage(df, filename):
     df.amino_acid = df.amino_acid.astype("category")
     df.amino_acid = df.amino_acid.cat.set_categories(aa_order)
     df = df.sort_values(["amino_acid"])
-    plt.rcParams.update({"font.size": 16, "figure.figsize": (19.2, 10.8), "legend.loc": "lower left"})
+    plt.rcParams.update({"font.size": 22, "figure.figsize": (19.2, 10.8), "legend.loc": "lower right"})
     ax = sns.barplot(x="diff_perc", y="amino_acid", data=df, hue="aa_type", dodge=False)
-    plt.xlim(-35, 35)
+    plt.xlim(-50, 50)
     plt.xlabel("Difference in amino acid usage (%)")
     plt.ylabel("Amino acid")
     plt.legend(title="Amino acid side chain type")
