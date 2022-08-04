@@ -7,6 +7,7 @@ import argparse as arg
 import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
+from scipy import stats
 
 
 def parse_arguments():
@@ -156,12 +157,28 @@ def parse_bed(filename):
     return df.rename(columns=columns)
 
 
+def spearman_stats(gc_df, out_dir):
+    """Calculate the spearman correlation statistic for GC content and length.
+
+    :param gc_df: pandas dataframe, parsed bed file
+    :param out_dir: str, output directory
+    :return: None, files is created in out_dir
+    """
+    df = gc_df[["seq_len", "gc_perc"]]
+    rho, pval = stats.spearmanr(df)
+    with open("{}pearsons_correlation_gc_vs_len.txt".format(out_dir), "w+") as file:
+        file.write("Pearson's rho: {:.5f}, pval: {:.5f}".format(rho, pval))
+    return None
+
+
 def main():
     """Main function."""
     pickle, bed, quartile_file, inc_border_file, out_dir = parse_arguments()
 
     inc_df = pd.read_pickle(pickle)
     gc_df = parse_bed(bed)
+
+    spearman_stats(gc_df, out_dir)
 
     # Read in quartiles
     with open(quartile_file) as file:
