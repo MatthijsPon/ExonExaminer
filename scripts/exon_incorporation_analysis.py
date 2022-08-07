@@ -12,6 +12,7 @@ import argparse as arg
 import pandas as pd
 import statistics
 import seaborn as sns
+import scipy.stats as stats
 
 
 def parse_arguments():
@@ -114,6 +115,34 @@ def scatterplot_roll_avg(data, x, y, hue, window, out_file,
     return None
 
 
+def welsch_ttest(result_df, out_file, size):
+    """Calculate Welsch T-test if possible.
+
+    :param result_df: pandas dataframe, ratios and sizes
+    :param out_file: open file object, file to output information to
+    :param size: int, size value to split the data on
+    :return: None, all information is outputted into output file
+    """
+    total = None
+    out_file.write("----- Exons of interest: {}+ bp -----\n".format(size))
+    subset = result_df.loc[result_df["exon_size"] >= size]
+    if size > 0:
+        total = result_df[~result_df["exon_size"].isin(subset["exon_size"])]
+
+    out_file.write("Total average expression difference {}: {:.2f}\n"
+                   "".format(size, statistics.fmean(list(subset["ratio"]))))
+    out_file.write("No. of internal exons examined: {}\n".format(len(subset.index)))
+
+    if total is not None:
+        # Perform Welch T-test
+        welch_t, p_val = stats.ttest_ind(total["ratio"], subset["ratio"], equal_var=False)
+        out_file.write("Welch t-statistic: {}, p-value: {}\n".format(welch_t, p_val))
+    else:
+        out_file.write("Welch t-test could not be performed due to the fact that there is no alternative group.")
+    out_file.write("\n\n")
+    return None
+
+
 def main():
     """Main function."""
     pickle_file, quartile_file, out_dir = parse_arguments()
@@ -178,6 +207,11 @@ def main():
     # Output lowest and highest value, to determine peaks
     with open("{}/exon_incorporation_positive_borders.txt".format(out_dir), "w+") as file:
         file.write("{}\t{}".format(inc_border_low, inc_border_high))
+
+    # Perform some Welch t-tests on subsets of the data
+    with open("{}welsch_ttests.txt".format(out_dir), "w+") as file:
+        for i in [50, 250, 500, 1000, 2000]:
+            welsch_ttest(results, file, i)
 
     return None
 
