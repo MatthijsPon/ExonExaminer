@@ -51,6 +51,26 @@ def exon_len_histograms(exon_df, out_folder, fig_name, bins, title=None, max_hei
     plt.close()
 
 
+def describe_exons(df, percentiles, name_dict, out_dir):
+    """Describe the exons from a gff file.
+
+    :param df: pandas dataframe, parsed gff
+    :param percentiles: list of floats, percentiles to describe
+    :param name_dict: dict, str: str, dictionary to rename groups based on pd index names
+    :param out_dir: str, output directory
+    :return: pandas dataframe, dataframe containing all information
+    """
+    stat_list = [df.loc[df["type"] == "exon"].describe(percentiles=percentiles).transpose()]
+    stat_list[0]["exon_type"] = "All"
+    for idx, group in df.loc[df["type"] == "exon"].groupby(["five_prime", "three_prime"]):
+        stat_list.append(group.describe(percentiles=percentiles).transpose())
+        stat_list[-1]["exon_type"] = name_dict[idx]
+    # Save statistics to txt file
+    info_pd = pd.concat(stat_list).set_index("exon_type")
+    info_pd.to_csv("{}/exon_statistics.txt".format(out_dir), sep="\t", mode="a+")
+    return info_pd
+
+
 def main():
     """Main function."""
     # Parse args
@@ -126,15 +146,7 @@ def main():
 
     # Statistics
     percentiles = [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]
-    stat_list = [gff.loc[gff["type"] == "exon"].describe(percentiles=percentiles).transpose()]
-    stat_list[0]["exon_type"] = "All"
-    for idx, group in gff.loc[gff["type"] == "exon"].groupby(["five_prime", "three_prime"]):
-        stat_list.append(group.describe(percentiles=percentiles).transpose())
-        stat_list[-1]["exon_type"] = name_dict[idx]
-    # Save statistics to txt file
-    info_pd = pd.concat(stat_list).set_index("exon_type")
-    info_pd.to_csv("{}/exon_statistics.txt".format(out_dir), sep="\t", mode="a+")
-
+    info_pd = describe_exons(gff, percentiles, name_dict, out_dir)
     # Save the 5th and 95th quartile to file
     Q5, Q95 = info_pd.loc["Internal exons"].loc[["5%", "95%"]]
     Q5, Q95 = int(Q5), int(Q95)
