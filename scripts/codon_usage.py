@@ -77,6 +77,8 @@ def determine_codon_usage(file):
     :return: dict, str: int, codon: count
     """
     codons_frac = {}
+    bases = "TCAG"
+    codon_options = [a + b + c for a in bases for b in bases for c in bases]
 
     for fa_id, fasta in yield_fasta_record(file):
         codons = {}
@@ -91,11 +93,17 @@ def determine_codon_usage(file):
             else:
                 codons[codon] += 1
         total = sum(codons.values())
-        for codon, n in codons.items():
-            if codons_frac.get(codon) is None:
-                codons_frac[codon] = [float(n / total)]
+        for codon in codon_options:
+            if codons.get(codon) is None:
+                if codons_frac.get(codon) is None:
+                    codons_frac[codon] = [0.0]
+                else:
+                    codons_frac[codon].append(0.0)
             else:
-                codons_frac[codon].append(float(n / total))
+                if codons_frac.get(codon) is None:
+                    codons_frac[codon] = [float(codons.get(codon) / total)]
+                else:
+                    codons_frac[codon].append(float(codons.get(codon) / total))
 
     for codon, frac_list in codons_frac.items():
         codons_frac[codon] = statistics.fmean(frac_list)
@@ -196,7 +204,6 @@ def main():
     au_df["diff_frac"] = au_df["fraction_y"] - au_df["fraction_x"]
     au_df["diff_perc"] = (au_df["fraction_y"] - au_df["fraction_x"]) / au_df["fraction_x"] * 100
     hbar_aa_usage(au_df, "{}aa_diff_hbar_{}.png".format(out_dir, group))
-
     # Codon usage
     cu_df1 = codon_usage_df(cu_dict1)
     cu_df2 = codon_usage_df(cu_dict2)
