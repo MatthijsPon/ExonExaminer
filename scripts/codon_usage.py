@@ -8,6 +8,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from cds_split_fa_2_size_groups import yield_fasta_record
 import seaborn as sns
+import statistics
 
 
 def parse_arguments():
@@ -75,9 +76,10 @@ def determine_codon_usage(file):
     :param file: iterable, open fasta file object
     :return: dict, str: int, codon: count
     """
-    codons = {}
+    codons_frac = {}
 
     for fa_id, fasta in yield_fasta_record(file):
+        codons = {}
         len_seq = len(fasta)
         for i in range(0, len_seq, 3):
             if i + 3 > len_seq:
@@ -88,8 +90,16 @@ def determine_codon_usage(file):
                 codons[codon] = 1
             else:
                 codons[codon] += 1
+        total = sum(codons.values())
+        for codon, n in codons.items():
+            if codons_frac.get(codon) is None:
+                codons_frac[codon] = [float(n / total)]
+            else:
+                codons_frac[codon].append(float(n / total))
 
-    return codons
+    for codon, frac_list in codons_frac.items():
+        codons_frac[codon] = statistics.fmean(frac_list)
+    return codons_frac
 
 
 def codon_usage_df(codon_usage):
@@ -118,17 +128,15 @@ def amino_acid_usage(cu_dict):
     :param cu_dict: dict, codon usage dictionary
     :return: amino acids usage dataframe
     """
-    total = sum(cu_dict.values())
 
     df = codon_aa_table()
-    df2 = pd.DataFrame(cu_dict, index=["count"])
+    df2 = pd.DataFrame(cu_dict, index=["fraction"])
     df2 = df2.transpose(copy=False)
     df2 = df2.reset_index()
     df2 = df2.rename(columns={"index": "codon"})
     df = df.merge(df2, how="left")
     df = df.groupby(["amino_acid", "aa_type"]).sum()
     df = df.reset_index()
-    df["fraction"] = df["count"] / total
 
     return df
 
